@@ -1,0 +1,24 @@
+{
+  "name": "ishibashi-web-clipper",
+  "version": "0.5.11",
+  "description": "Obsidian plugin for capturing shared web links as Markdown notes.",
+  "main": "main.js",
+  "scripts": {
+    "build": "node esbuild.config.mjs --production",
+    "check": "tsc --noEmit && npm run build && node --check main.js",
+    "dev": "node esbuild.config.mjs",
+    "release:zip": "npm run check && zip -FSr ishibashi-web-clipper.zip main.js manifest.json styles.css README.md LICENSE versions.json"
+  },
+  "keywords": [
+    "obsidian",
+    "obsidian-plugin",
+    "web-clipper"
+  ],
+  "author": "koudai",
+  "license": "MIT",
+  "devDependencies": {
+    "esbuild": "^0.28.1",
+    "obsidian": "^1.13.1",
+    "typescript": "^6.0.3"
+  }
+}

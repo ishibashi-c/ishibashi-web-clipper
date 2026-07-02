@@ -1,0 +1,1 @@
+javascript:(()=>{const e=encodeURIComponent;const url=location.href;const title=document.title||"";const selection=window.getSelection?String(window.getSelection()).trim():"";let target=`obsidian://ishibashi-web-clip?url=${e(url)}&title=${e(title)}`;if(selection)target+=`&note=${e(selection.slice(0,1500))}`;location.href=target;})();
