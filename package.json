@@ -14,7 +14,7 @@
     "obsidian-plugin",
     "web-clipper"
   ],
-  "author": "koudai",
+  "author": "IshibashiCustomize",
   "license": "MIT",
   "devDependencies": {
     "esbuild": "^0.28.1",
