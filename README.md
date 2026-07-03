@@ -60,7 +60,11 @@ The library reads saved web clip frontmatter across the vault and provides:
 - The active sort key is highlighted in each card.
 - Switch the result grid between 1, 2, and 3 columns.
 - Resizable browse, result, and overview panes.
-- Edit tags and move a clip to another folder from the library.
+- Fixed card actions for opening the source page and editing the clip.
+- Overview and edit tabs in the right pane.
+- Edit tags, remove individual tags, and move a clip to another folder from the library.
+- Drag a card onto a folder or tag group to move it or add that tag.
+- Select multiple clips and bulk add tags, remove tags, or move folders.
 - Summary counts and frequently used tags.
 - One-click opening for the Obsidian note or original source page.
 - `share.google` links are resolved to their final URL before saving when possible.
@@ -206,7 +210,11 @@ Inbox運用では、設定した整理待ちフォルダへ保存し、後から
 - 並び替え中の項目をカード内で強調表示
 - 検索結果を1列、2列、3列のグリッド表示に切り替え
 - 分類、検索結果、概要のペイン幅をドラッグで変更
-- 管理ページからタグ編集とフォルダ移動を実行
+- カード下部の固定アクションから元ページ表示と編集を実行
+- 右ペインを概要タブと編集タブで切り替え
+- 管理ページからタグ編集、個別タグ削除、フォルダ移動を実行
+- カードをフォルダまたはタグ分類へドラッグして移動またはタグ追加
+- 複数クリップを選択してタグ追加、タグ削除、フォルダ移動を一括実行
 - 総数、表示中件数、ドメイン数、タグ数、よく使うタグを確認
 - Obsidianノートまたは元ページをワンクリックで開く
 - `share.google` リンクは可能な範囲で元URLに解決して保存

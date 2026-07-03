@@ -957,6 +957,9 @@ class WebClipLibraryView extends ItemView {
   groupBy: "folder" | "domain" | "tag";
   groupSortBy: "count-desc" | "count-asc" | "name-asc" | "name-desc";
   sortBy: "date-desc" | "date-asc" | "title-asc" | "title-desc" | "domain-asc" | "domain-desc";
+  inspectorTab: "overview" | "edit";
+  selectedPath: string;
+  selectedPaths: Set<string>;
   loading: boolean;
 
   constructor(leaf: any, plugin: IshibashiWebClipper) {
@@ -970,6 +973,9 @@ class WebClipLibraryView extends ItemView {
     this.groupBy = "folder";
     this.groupSortBy = "count-desc";
     this.sortBy = "date-desc";
+    this.inspectorTab = "overview";
+    this.selectedPath = "";
+    this.selectedPaths = new Set();
     this.loading = false;
   }
 
@@ -1000,6 +1006,10 @@ class WebClipLibraryView extends ItemView {
     this.loading = true;
     this.render();
     this.items = await this.plugin.collectWebClipLibraryItems();
+    this.selectedPaths = new Set(Array.from(this.selectedPaths).filter((path) => this.items.some((item) => item.file.path === path)));
+    if (this.selectedPath && !this.items.some((item) => item.file.path === this.selectedPath)) {
+      this.selectedPath = "";
+    }
     this.loading = false;
     this.render();
   }
@@ -1233,6 +1243,11 @@ class WebClipLibraryView extends ItemView {
       cls: `ishibashi-web-clipper-library-list is-columns-${gridColumns}`
     });
     list.style.gridTemplateColumns = `repeat(${gridColumns}, minmax(0, 1fr))`;
+
+    if (this.selectedPaths.size > 0) {
+      this.renderBulkBar(list);
+    }
+
     if (filtered.length === 0) {
       list.createDiv({
         text: this.plugin.t("libraryEmpty"),
@@ -1242,8 +1257,41 @@ class WebClipLibraryView extends ItemView {
     }
 
     for (const item of filtered) {
-      const card = list.createDiv({ cls: "ishibashi-web-clipper-library-card" });
+      const selected = this.selectedPath === item.file.path;
+      const checked = this.selectedPaths.has(item.file.path);
+      const card = list.createDiv({
+        cls: selected
+          ? "ishibashi-web-clipper-library-card is-selected"
+          : "ishibashi-web-clipper-library-card"
+      });
+      card.draggable = true;
+      card.addEventListener("dragstart", (event) => {
+        event.dataTransfer?.setData("text/plain", item.file.path);
+        event.dataTransfer?.setData("application/x-ishibashi-web-clip", item.file.path);
+        event.dataTransfer!.effectAllowed = "move";
+      });
+      card.addEventListener("click", (event) => {
+        const target = event.target as HTMLElement;
+        if (target.closest("button") || target.closest("input")) return;
+        this.selectedPath = item.file.path;
+        this.render();
+      });
       const top = card.createDiv({ cls: "ishibashi-web-clipper-library-card-top" });
+      const check = top.createEl("input", {
+        type: "checkbox",
+        cls: "ishibashi-web-clipper-library-select"
+      });
+      check.checked = checked;
+      check.setAttr("aria-label", this.plugin.t("librarySelectClip"));
+      check.addEventListener("change", () => {
+        if (check.checked) {
+          this.selectedPaths.add(item.file.path);
+          this.selectedPath = item.file.path;
+        } else {
+          this.selectedPaths.delete(item.file.path);
+        }
+        this.render();
+      });
       top.createDiv({
         text: formatLibraryDate(item.createdAt || item.created),
         cls: this.isSortKey("date")
@@ -1275,32 +1323,21 @@ class WebClipLibraryView extends ItemView {
       }
 
       const meta = card.createDiv({ cls: "ishibashi-web-clipper-library-meta" });
-      meta.createSpan({ text: item.folder || "/" });
-      if (item.source) {
-        const source = meta.createEl("button", {
-          text: this.plugin.t("libraryOpenSource"),
-          cls: "ishibashi-web-clipper-library-link"
-        });
-        source.addEventListener("click", () => {
-          const sourceUrl = normalizeUrl(item.source);
-          if (sourceUrl) window.open(sourceUrl, "_blank", "noopener");
-        });
-      }
-
-      const edit = meta.createEl("button", {
-        text: this.plugin.t("libraryEditClip"),
-        cls: "ishibashi-web-clipper-library-link"
+      const folder = meta.createEl("button", {
+        text: item.folder || "/",
+        cls: "ishibashi-web-clipper-library-folder"
       });
-      edit.addEventListener("click", () => {
-        new WebClipEditModal(this.app, this.plugin, item, async () => {
-          await this.load();
-        }).open();
+      folder.addEventListener("click", () => {
+        this.selectedPath = item.file.path;
+        this.inspectorTab = "edit";
+        this.render();
       });
 
       if (item.tags.length > 0) {
         const tags = card.createDiv({ cls: "ishibashi-web-clipper-library-tags" });
         for (const tag of item.tags.slice(0, 8)) {
-          const button = tags.createEl("button", {
+          const wrap = tags.createSpan({ cls: "ishibashi-web-clipper-library-tag-wrap" });
+          const button = wrap.createEl("button", {
             text: `#${tag}`,
             cls: "ishibashi-web-clipper-library-tag"
           });
@@ -1310,18 +1347,76 @@ class WebClipLibraryView extends ItemView {
             this.groupBy = "tag";
             this.render();
           });
+          const remove = wrap.createEl("button", {
+            text: "x",
+            cls: "ishibashi-web-clipper-library-tag-remove"
+          });
+          remove.setAttr("aria-label", this.plugin.t("libraryRemoveTag").replace("{{tag}}", tag));
+          remove.addEventListener("click", async () => {
+            await this.removeTag(item, tag);
+          });
         }
       }
+
+      const addTag = card.createEl("button", {
+        text: this.plugin.t("libraryAddTag"),
+        cls: "ishibashi-web-clipper-library-add-tag"
+      });
+      addTag.addEventListener("click", () => {
+        new WebClipTextInputModal(
+          this.app,
+          this.plugin,
+          this.plugin.t("libraryAddTag"),
+          this.plugin.t("libraryAddTagDesc"),
+          "",
+          async (value) => {
+            await this.addTags(item, splitTags(value));
+          }
+        ).open();
+      });
+
+      const footer = card.createDiv({ cls: "ishibashi-web-clipper-library-card-footer" });
+      if (item.source) {
+        const source = footer.createEl("button", {
+          text: this.plugin.t("libraryOpenSource"),
+          cls: "ishibashi-web-clipper-library-action"
+        });
+        source.addEventListener("click", () => {
+          const sourceUrl = normalizeUrl(item.source);
+          if (sourceUrl) window.open(sourceUrl, "_blank", "noopener");
+        });
+      }
+      const edit = footer.createEl("button", {
+        text: this.plugin.t("libraryEditClip"),
+        cls: "ishibashi-web-clipper-library-action"
+      });
+      edit.addEventListener("click", () => {
+        this.selectedPath = item.file.path;
+        this.inspectorTab = "edit";
+        this.render();
+      });
     }
   }
 
   renderInspector(container: HTMLElement, filtered: WebClipLibraryItem[]) {
     const inspector = container.createDiv({ cls: "ishibashi-web-clipper-library-inspector" });
+    this.addSegment(inspector, [
+      { label: this.plugin.t("libraryOverview"), value: "overview" },
+      { label: this.plugin.t("libraryEditTab"), value: "edit" }
+    ], this.inspectorTab, (value) => {
+      this.inspectorTab = value as "overview" | "edit";
+      this.render();
+    });
+
+    if (this.inspectorTab === "edit") {
+      this.renderInspectorEdit(inspector);
+      return;
+    }
+
     inspector.createDiv({
       text: this.plugin.t("libraryOverview"),
       cls: "ishibashi-web-clipper-library-label"
     });
-
     const stats = inspector.createDiv({ cls: "ishibashi-web-clipper-library-stats" });
     this.addStat(stats, this.plugin.t("libraryTotal"), String(this.items.length));
     this.addStat(stats, this.plugin.t("libraryFiltered"), String(filtered.length));
@@ -1347,6 +1442,105 @@ class WebClipLibraryView extends ItemView {
     }
   }
 
+  renderInspectorEdit(container: HTMLElement) {
+    const item = this.getSelectedItem();
+    container.createDiv({
+      text: this.plugin.t("libraryEditTab"),
+      cls: "ishibashi-web-clipper-library-label"
+    });
+
+    if (!item) {
+      container.createDiv({
+        text: this.plugin.t("libraryEditNoSelection"),
+        cls: "ishibashi-web-clipper-library-empty"
+      });
+      return;
+    }
+
+    container.createDiv({
+      text: item.title || item.file.basename,
+      cls: "ishibashi-web-clipper-library-edit-title"
+    });
+    const folderInput = container.createEl("input", {
+      type: "text",
+      value: item.folder,
+      cls: "ishibashi-web-clipper-library-edit-input"
+    });
+    folderInput.setAttr("aria-label", this.plugin.t("fieldFolder"));
+    const tagsInput = container.createEl("textarea", {
+      cls: "ishibashi-web-clipper-library-edit-tags"
+    });
+    tagsInput.value = item.tags.join("\n");
+    tagsInput.setAttr("aria-label", this.plugin.t("fieldTags"));
+
+    const actions = container.createDiv({ cls: "ishibashi-web-clipper-library-edit-actions" });
+    const apply = actions.createEl("button", {
+      text: this.plugin.t("libraryEditApply"),
+      cls: "mod-cta"
+    });
+    apply.addEventListener("click", async () => {
+      await this.applyOrganization(item, folderInput.value, splitTags(tagsInput.value));
+    });
+    const open = actions.createEl("button", {
+      text: this.plugin.t("libraryOpenNote")
+    });
+    open.addEventListener("click", async () => {
+      await this.plugin.openFile(item.file.path);
+    });
+  }
+
+  renderBulkBar(container: HTMLElement) {
+    const bar = container.createDiv({ cls: "ishibashi-web-clipper-library-bulk" });
+    bar.createDiv({
+      text: this.plugin.t("libraryBulkSelected").replace("{{count}}", String(this.selectedPaths.size)),
+      cls: "ishibashi-web-clipper-library-bulk-count"
+    });
+    const addTag = bar.createEl("button", { text: this.plugin.t("libraryBulkAddTag") });
+    addTag.addEventListener("click", () => {
+      new WebClipTextInputModal(
+        this.app,
+        this.plugin,
+        this.plugin.t("libraryBulkAddTag"),
+        this.plugin.t("libraryAddTagDesc"),
+        "",
+        async (value) => {
+          await this.addTagsToSelected(splitTags(value));
+        }
+      ).open();
+    });
+    const removeTag = bar.createEl("button", { text: this.plugin.t("libraryBulkRemoveTag") });
+    removeTag.addEventListener("click", () => {
+      new WebClipTextInputModal(
+        this.app,
+        this.plugin,
+        this.plugin.t("libraryBulkRemoveTag"),
+        this.plugin.t("libraryRemoveTagDesc"),
+        "",
+        async (value) => {
+          await this.removeTagsFromSelected(splitTags(value));
+        }
+      ).open();
+    });
+    const move = bar.createEl("button", { text: this.plugin.t("libraryBulkMoveFolder") });
+    move.addEventListener("click", () => {
+      new WebClipTextInputModal(
+        this.app,
+        this.plugin,
+        this.plugin.t("libraryBulkMoveFolder"),
+        this.plugin.t("libraryMoveFolderDesc"),
+        this.getSelectedItem()?.folder || this.plugin.getDefaultTargetFolder(),
+        async (value) => {
+          await this.moveSelected(value);
+        }
+      ).open();
+    });
+    const clear = bar.createEl("button", { text: this.plugin.t("libraryBulkClear") });
+    clear.addEventListener("click", () => {
+      this.selectedPaths.clear();
+      this.render();
+    });
+  }
+
   addSegment(
     container: HTMLElement,
     options: { label: string; value: string }[],
@@ -1368,6 +1562,7 @@ class WebClipLibraryView extends ItemView {
     const button = container.createEl("button", {
       cls: active ? "ishibashi-web-clipper-library-filter is-active" : "ishibashi-web-clipper-library-filter"
     });
+    this.configureDropTarget(button, kind, value);
     button.createSpan({ text: label || this.plugin.t("libraryUnknown") });
     button.createSpan({ text: String(count) });
     button.addEventListener("click", () => {
@@ -1386,6 +1581,32 @@ class WebClipLibraryView extends ItemView {
     const stat = container.createDiv({ cls: "ishibashi-web-clipper-library-stat" });
     stat.createDiv({ text: value, cls: "ishibashi-web-clipper-library-stat-value" });
     stat.createDiv({ text: label, cls: "ishibashi-web-clipper-library-stat-label" });
+  }
+
+  configureDropTarget(element: HTMLElement, kind: string, value: string) {
+    if (kind !== "folder" && kind !== "tag") return;
+    element.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      element.addClass("is-drop-target");
+      if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+    });
+    element.addEventListener("dragleave", () => {
+      element.removeClass("is-drop-target");
+    });
+    element.addEventListener("drop", async (event) => {
+      event.preventDefault();
+      element.removeClass("is-drop-target");
+      const path = event.dataTransfer?.getData("application/x-ishibashi-web-clip")
+        || event.dataTransfer?.getData("text/plain")
+        || "";
+      const item = this.items.find((entry) => entry.file.path === path);
+      if (!item) return;
+      if (kind === "folder") {
+        await this.applyOrganization(item, value, item.tags);
+      } else {
+        await this.addTags(item, [value]);
+      }
+    });
   }
 
   isSortKey(key: "date" | "title" | "domain"): boolean {
@@ -1448,6 +1669,85 @@ class WebClipLibraryView extends ItemView {
         if (this.groupSortBy === "name-desc") return b.label.localeCompare(a.label) || b.count - a.count;
         return b.count - a.count || a.label.localeCompare(b.label);
       });
+  }
+
+  getSelectedItem(): WebClipLibraryItem | null {
+    if (this.selectedPath) {
+      const direct = this.items.find((item) => item.file.path === this.selectedPath);
+      if (direct) return direct;
+    }
+    const firstPath = Array.from(this.selectedPaths)[0];
+    return firstPath ? this.items.find((item) => item.file.path === firstPath) || null : null;
+  }
+
+  getSelectedItems(): WebClipLibraryItem[] {
+    return this.items.filter((item) => this.selectedPaths.has(item.file.path));
+  }
+
+  async applyOrganization(item: WebClipLibraryItem, folder: string, tags: string[]) {
+    const nextFolder = normalizePath(folder);
+    if (!nextFolder) {
+      new Notice(this.plugin.t("libraryEditFolderRequired"));
+      return;
+    }
+    const moved = await this.plugin.updateWebClipOrganization(item.file, nextFolder, tags);
+    this.selectedPath = moved.path;
+    if (this.selectedPaths.delete(item.file.path)) {
+      this.selectedPaths.add(moved.path);
+    }
+    new Notice(this.plugin.t("libraryEditComplete"));
+    await this.load();
+  }
+
+  async addTags(item: WebClipLibraryItem, tags: string[]) {
+    const nextTags = unique([...item.tags, ...tags.map(normalizeTag).filter(Boolean)]);
+    await this.applyOrganization(item, item.folder, nextTags);
+  }
+
+  async removeTag(item: WebClipLibraryItem, tag: string) {
+    const nextTags = item.tags.filter((value) => value !== tag);
+    await this.applyOrganization(item, item.folder, nextTags);
+  }
+
+  async addTagsToSelected(tags: string[]) {
+    const cleanTags = tags.map(normalizeTag).filter(Boolean);
+    if (cleanTags.length === 0) return;
+    for (const item of this.getSelectedItems()) {
+      await this.plugin.updateWebClipOrganization(item.file, item.folder, unique([...item.tags, ...cleanTags]));
+    }
+    new Notice(this.plugin.t("libraryEditComplete"));
+    await this.load();
+  }
+
+  async removeTagsFromSelected(tags: string[]) {
+    const cleanTags = tags.map(normalizeTag).filter(Boolean);
+    if (cleanTags.length === 0) return;
+    for (const item of this.getSelectedItems()) {
+      await this.plugin.updateWebClipOrganization(
+        item.file,
+        item.folder,
+        item.tags.filter((tag) => !cleanTags.includes(tag))
+      );
+    }
+    new Notice(this.plugin.t("libraryEditComplete"));
+    await this.load();
+  }
+
+  async moveSelected(folder: string) {
+    const nextFolder = normalizePath(folder);
+    if (!nextFolder) {
+      new Notice(this.plugin.t("libraryEditFolderRequired"));
+      return;
+    }
+    const nextSelected = new Set<string>();
+    for (const item of this.getSelectedItems()) {
+      const moved = await this.plugin.updateWebClipOrganization(item.file, nextFolder, item.tags);
+      nextSelected.add(moved.path);
+    }
+    this.selectedPaths = nextSelected;
+    this.selectedPath = Array.from(nextSelected)[0] || "";
+    new Notice(this.plugin.t("libraryEditComplete"));
+    await this.load();
   }
 }
 
@@ -1539,6 +1839,93 @@ class WebClipEditModal extends Modal {
       new Notice(this.plugin.t("libraryEditComplete"));
       this.close();
       await this.onSubmit();
+    } catch (error) {
+      console.error(error);
+      new Notice(this.plugin.t("libraryEditFailed"));
+      this.submitting = false;
+      this.render();
+    }
+  }
+
+  onClose() {
+    this.contentEl.empty();
+  }
+}
+
+class WebClipTextInputModal extends Modal {
+  plugin: IshibashiWebClipper;
+  title: string;
+  description: string;
+  value: string;
+  onSubmit: (value: string) => Promise<void>;
+  submitting: boolean;
+
+  constructor(
+    app: any,
+    plugin: IshibashiWebClipper,
+    title: string,
+    description: string,
+    value: string,
+    onSubmit: (value: string) => Promise<void>
+  ) {
+    super(app);
+    this.plugin = plugin;
+    this.title = title;
+    this.description = description;
+    this.value = value;
+    this.onSubmit = onSubmit;
+    this.submitting = false;
+  }
+
+  onOpen() {
+    this.render();
+  }
+
+  render() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.addClass("ishibashi-web-clipper-edit");
+    contentEl.createEl("h2", { text: this.title });
+    if (this.description) {
+      contentEl.createEl("p", {
+        text: this.description,
+        cls: "ishibashi-web-clipper-modal-help"
+      });
+    }
+    const input = contentEl.createEl("textarea", {
+      cls: "ishibashi-web-clipper-library-edit-tags"
+    });
+    input.value = this.value;
+    input.rows = 5;
+    input.addEventListener("input", () => {
+      this.value = input.value;
+    });
+
+    new Setting(contentEl)
+      .addButton((button) => {
+        button
+          .setButtonText(this.plugin.t("buttonCancel"))
+          .setDisabled(this.submitting)
+          .onClick(() => this.close());
+      })
+      .addButton((button) => {
+        button
+          .setCta()
+          .setButtonText(this.plugin.t("libraryEditApply"))
+          .setDisabled(this.submitting)
+          .onClick(async () => {
+            await this.apply();
+          });
+      });
+  }
+
+  async apply() {
+    if (this.submitting) return;
+    this.submitting = true;
+    this.render();
+    try {
+      await this.onSubmit(this.value);
+      this.close();
     } catch (error) {
       console.error(error);
       new Notice(this.plugin.t("libraryEditFailed"));
@@ -2185,14 +2572,28 @@ const STRINGS = {
     libraryEmpty: "条件に合うWebクリップがありません。",
     libraryNoDomain: "ドメインなし",
     libraryOpenSource: "元ページ",
+    libraryOpenNote: "ノートを開く",
     libraryEditClip: "編集",
+    libraryEditTab: "編集",
     libraryEditTitle: "Webクリップを整理",
+    libraryEditNoSelection: "編集するWebクリップを選択してください。",
     libraryEditFolderDesc: "移動先フォルダ。存在しない場合は作成します。",
     libraryEditTagsDesc: "タグを改行またはカンマ区切りで貼り付けできます。",
     libraryEditApply: "変更を適用",
     libraryEditFolderRequired: "移動先フォルダを入力してください。",
     libraryEditComplete: "Webクリップを更新しました。",
     libraryEditFailed: "Webクリップの更新に失敗しました。",
+    librarySelectClip: "Webクリップを選択",
+    libraryAddTag: "+ タグ",
+    libraryAddTagDesc: "追加するタグを改行またはカンマ区切りで入力してください。",
+    libraryRemoveTag: "{{tag}} を削除",
+    libraryRemoveTagDesc: "削除するタグを改行またはカンマ区切りで入力してください。",
+    libraryMoveFolderDesc: "移動先フォルダを入力してください。",
+    libraryBulkSelected: "{{count}}件を選択中",
+    libraryBulkAddTag: "タグ追加",
+    libraryBulkRemoveTag: "タグ削除",
+    libraryBulkMoveFolder: "フォルダ移動",
+    libraryBulkClear: "選択解除",
     libraryOverview: "概要",
     libraryTotal: "総数",
     libraryFiltered: "表示中",
@@ -2339,14 +2740,28 @@ const STRINGS = {
     libraryEmpty: "No web clips match the current filters.",
     libraryNoDomain: "No domain",
     libraryOpenSource: "Source",
+    libraryOpenNote: "Open note",
     libraryEditClip: "Edit",
+    libraryEditTab: "Edit",
     libraryEditTitle: "Organize web clip",
+    libraryEditNoSelection: "Select a web clip to edit.",
     libraryEditFolderDesc: "Destination folder. It will be created if it does not exist.",
     libraryEditTagsDesc: "Paste tags separated by newlines or commas.",
     libraryEditApply: "Apply changes",
     libraryEditFolderRequired: "Enter a destination folder.",
     libraryEditComplete: "Updated web clip.",
     libraryEditFailed: "Failed to update web clip.",
+    librarySelectClip: "Select web clip",
+    libraryAddTag: "+ Tag",
+    libraryAddTagDesc: "Enter tags to add, separated by newlines or commas.",
+    libraryRemoveTag: "Remove {{tag}}",
+    libraryRemoveTagDesc: "Enter tags to remove, separated by newlines or commas.",
+    libraryMoveFolderDesc: "Enter the destination folder.",
+    libraryBulkSelected: "{{count}} selected",
+    libraryBulkAddTag: "Add tag",
+    libraryBulkRemoveTag: "Remove tag",
+    libraryBulkMoveFolder: "Move folder",
+    libraryBulkClear: "Clear selection",
     libraryOverview: "Overview",
     libraryTotal: "Total",
     libraryFiltered: "Visible",
