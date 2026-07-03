@@ -79,6 +79,7 @@ import {
 
 export default class IshibashiWebClipper extends Plugin {
   settings: WebClipperSettings;
+  ribbonIconEl: HTMLElement | null = null;
 
   async onload() {
     this.settings = mergeSettings(await this.loadData());
@@ -113,7 +114,7 @@ export default class IshibashiWebClipper extends Plugin {
       })
     );
 
-    this.addRibbonIcon("library", this.t("ribbonOpenLibrary"), async () => {
+    this.ribbonIconEl = this.addRibbonIcon("library", this.t("ribbonOpenLibrary"), async () => {
       await this.openClipLibrary();
     });
 
@@ -164,6 +165,13 @@ export default class IshibashiWebClipper extends Plugin {
 
   async saveSettings() {
     await this.saveData(this.settings);
+  }
+
+  updateRibbonLabel() {
+    if (!this.ribbonIconEl) return;
+    const label = this.t("ribbonOpenLibrary");
+    this.ribbonIconEl.setAttr("aria-label", label);
+    this.ribbonIconEl.setAttr("title", label);
   }
 
   t(key: string) {
@@ -2383,6 +2391,7 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
           .onChange(async (value: "ja" | "en") => {
             this.plugin.settings.language = value;
             await this.plugin.saveSettings();
+            this.plugin.updateRibbonLabel();
             this.display();
           });
       });

@@ -69,7 +69,7 @@ var DEFAULT_SETTINGS = {
 var STRINGS = {
   ja: {
     menuSaveClip: "\u30A6\u30A7\u30D6\u30AF\u30EA\u30C3\u30D7\u306B\u4FDD\u5B58",
-    ribbonOpenLibrary: "Web\u30AF\u30EA\u30C3\u30D7\u7BA1\u7406\u30DA\u30FC\u30B8\u3092\u30B5\u30A4\u30C9\u30D0\u30FC\u3067\u958B\u304F",
+    ribbonOpenLibrary: "Web\u30AF\u30EA\u30C3\u30D7\u7BA1\u7406\u30DA\u30FC\u30B8\u3092\u958B\u304F",
     commandClipClipboard: "\u30AF\u30EA\u30C3\u30D7\u30DC\u30FC\u30C9\u306EURL\u3092\u30A6\u30A7\u30D6\u30AF\u30EA\u30C3\u30D7\u306B\u4FDD\u5B58\u3059\u308B",
     commandOpenHistory: "\u30A6\u30A7\u30D6\u30AF\u30EA\u30C3\u30D7\u5C65\u6B74\u3092\u958B\u304F",
     commandOpenLibrary: "Web\u30AF\u30EA\u30C3\u30D7\u7BA1\u7406\u30DA\u30FC\u30B8\u3092\u958B\u304F",
@@ -242,7 +242,7 @@ var STRINGS = {
   },
   en: {
     menuSaveClip: "Save to Web Clips",
-    ribbonOpenLibrary: "Open Web Clip Library in sidebar",
+    ribbonOpenLibrary: "Open Web Clip Library",
     commandClipClipboard: "Save clipboard URL to Web Clips",
     commandOpenHistory: "Open Web Clip History",
     commandOpenLibrary: "Open Web Clip Library",
@@ -745,6 +745,10 @@ function mergeSettings(saved) {
 
 // src/main.ts
 var IshibashiWebClipper = class extends import_obsidian2.Plugin {
+  constructor() {
+    super(...arguments);
+    this.ribbonIconEl = null;
+  }
   async onload() {
     this.settings = mergeSettings(await this.loadData());
     this.registerObsidianProtocolHandler(PROTOCOL_ACTION, async (params) => {
@@ -770,7 +774,7 @@ var IshibashiWebClipper = class extends import_obsidian2.Plugin {
         });
       })
     );
-    this.addRibbonIcon("library", this.t("ribbonOpenLibrary"), async () => {
+    this.ribbonIconEl = this.addRibbonIcon("library", this.t("ribbonOpenLibrary"), async () => {
       await this.openClipLibrary();
     });
     this.addCommand({
@@ -812,6 +816,12 @@ var IshibashiWebClipper = class extends import_obsidian2.Plugin {
   }
   async saveSettings() {
     await this.saveData(this.settings);
+  }
+  updateRibbonLabel() {
+    if (!this.ribbonIconEl) return;
+    const label = this.t("ribbonOpenLibrary");
+    this.ribbonIconEl.setAttr("aria-label", label);
+    this.ribbonIconEl.setAttr("title", label);
   }
   t(key) {
     return translate(this.settings.language, key);
@@ -2439,6 +2449,7 @@ var IshibashiWebClipperSettingTab = class extends import_obsidian2.PluginSetting
       dropdown.addOption("ja", "\u65E5\u672C\u8A9E").addOption("en", "English").setValue(this.plugin.settings.language).onChange(async (value) => {
         this.plugin.settings.language = value;
         await this.plugin.saveSettings();
+        this.plugin.updateRibbonLabel();
         this.display();
       });
     });

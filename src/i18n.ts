@@ -1,7 +1,7 @@
 const STRINGS = {
   ja: {
     menuSaveClip: "ウェブクリップに保存",
-    ribbonOpenLibrary: "Webクリップ管理ページをサイドバーで開く",
+    ribbonOpenLibrary: "Webクリップ管理ページを開く",
     commandClipClipboard: "クリップボードのURLをウェブクリップに保存する",
     commandOpenHistory: "ウェブクリップ履歴を開く",
     commandOpenLibrary: "Webクリップ管理ページを開く",
@@ -174,7 +174,7 @@ const STRINGS = {
   },
   en: {
     menuSaveClip: "Save to Web Clips",
-    ribbonOpenLibrary: "Open Web Clip Library in sidebar",
+    ribbonOpenLibrary: "Open Web Clip Library",
     commandClipClipboard: "Save clipboard URL to Web Clips",
     commandOpenHistory: "Open Web Clip History",
     commandOpenLibrary: "Open Web Clip Library",
