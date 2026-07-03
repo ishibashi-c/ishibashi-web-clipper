@@ -50,7 +50,7 @@ Run `Save clipboard URL to Web Clips` from the command palette.
 
 ### Web Clip Library
 
-Run `Open Web Clip Library` from the command palette, open it from the plugin settings, or click the ribbon icon to open it in the sidebar.
+Run `Open Web Clip Library` from the command palette, open it from the plugin settings, or click the ribbon icon to open it in the center workspace.
 The library reads saved web clip frontmatter across the vault and provides:
 
 - Folder, domain, and tag navigation.
@@ -62,6 +62,7 @@ The library reads saved web clip frontmatter across the vault and provides:
 - Resizable browse, result, and overview panes.
 - Fixed card actions for opening the source page and editing the clip.
 - Overview and edit tabs in the right pane.
+- Choose tags from existing tags and choose destination folders from web clip folders.
 - Edit tags, remove individual tags, and move a clip to another folder from the library.
 - Drag a card onto a folder or tag group to move it or add that tag.
 - Select multiple clips and bulk add tags, remove tags, or move folders.
@@ -212,6 +213,7 @@ Inbox運用では、設定した整理待ちフォルダへ保存し、後から
 - 分類、検索結果、概要のペイン幅をドラッグで変更
 - カード下部の固定アクションから元ページ表示と編集を実行
 - 右ペインを概要タブと編集タブで切り替え
+- 既存タグからタグを選択し、Webクリップ配下フォルダから移動先を選択
 - 管理ページからタグ編集、個別タグ削除、フォルダ移動を実行
 - カードをフォルダまたはタグ分類へドラッグして移動またはタグ追加
 - 複数クリップを選択してタグ追加、タグ削除、フォルダ移動を一括実行

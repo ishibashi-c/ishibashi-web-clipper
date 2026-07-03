@@ -402,10 +402,10 @@
 
 .ishibashi-web-clipper-library-card {
   position: relative;
-  display: grid;
-  min-height: 260px;
-  grid-template-rows: auto auto auto auto auto auto;
-  align-content: start;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
   margin-bottom: 0;
   padding: 24px 28px 22px;
   border: 1px solid var(--iwc-library-rule);
@@ -428,6 +428,7 @@
 .ishibashi-web-clipper-library-card-top,
 .ishibashi-web-clipper-library-meta {
   gap: 12px;
+  flex: 0 0 auto;
 }
 
 .ishibashi-web-clipper-library-card-top {
@@ -471,6 +472,7 @@
 .ishibashi-web-clipper-library-title {
   display: block !important;
   width: 100%;
+  flex: 0 0 auto;
   min-height: 0 !important;
   height: auto !important;
   margin: 16px 0 0;
@@ -485,7 +487,13 @@
   white-space: normal;
   overflow-wrap: anywhere;
   word-break: normal;
+  cursor: pointer;
   box-shadow: none !important;
+}
+
+.ishibashi-web-clipper-library-title:focus-visible {
+  outline: 2px solid var(--iwc-library-accent);
+  outline-offset: 2px;
 }
 
 .ishibashi-web-clipper-library-title:hover {
@@ -505,6 +513,7 @@
 }
 
 .ishibashi-web-clipper-library-desc {
+  flex: 0 0 auto;
   max-width: 76ch;
   margin-top: 12px;
   color: var(--text-muted);
@@ -515,6 +524,7 @@
 
 .ishibashi-web-clipper-library-meta {
   display: block;
+  flex: 0 0 auto;
   margin-top: 16px;
   overflow-wrap: anywhere;
 }
@@ -540,6 +550,7 @@
 .ishibashi-web-clipper-library-tags,
 .ishibashi-web-clipper-library-tag-cloud {
   display: flex;
+  flex: 0 0 auto;
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 14px;
@@ -581,6 +592,7 @@
 
 .ishibashi-web-clipper-library-add-tag {
   align-self: flex-start;
+  flex: 0 0 auto;
   min-height: 0;
   margin-top: 10px;
   padding: 4px 8px;
@@ -607,9 +619,10 @@
 
 .ishibashi-web-clipper-library-card-footer {
   display: flex;
+  flex: 0 0 auto;
   justify-content: space-between;
   gap: 12px;
-  margin-top: 16px;
+  margin-top: auto;
   padding-top: 12px;
   border-top: 1px solid var(--iwc-library-rule);
 }
@@ -662,6 +675,61 @@
   gap: 8px;
 }
 
+.ishibashi-web-clipper-library-edit-picker {
+  display: block;
+  width: 100%;
+  min-height: 38px;
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--iwc-library-rule);
+  border-radius: 4px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  text-align: left;
+  overflow-wrap: anywhere;
+  box-shadow: none !important;
+}
+
+.ishibashi-web-clipper-library-edit-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 12px;
+}
+
+.ishibashi-web-clipper-picker-list {
+  max-height: 320px;
+  margin: 12px 0;
+  overflow: auto;
+  border: 1px solid var(--iwc-library-rule);
+  border-radius: 4px;
+}
+
+.ishibashi-web-clipper-picker-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--iwc-library-rule);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-normal);
+  text-align: left;
+  box-shadow: none !important;
+}
+
+.ishibashi-web-clipper-picker-row:last-child {
+  border-bottom: 0;
+}
+
+.ishibashi-web-clipper-picker-row:hover,
+.ishibashi-web-clipper-picker-row.is-active {
+  background: var(--iwc-library-plane);
+}
+
 .ishibashi-web-clipper-library-list.is-columns-2,
 .ishibashi-web-clipper-library-list.is-columns-3 {
   gap: 14px;
@@ -669,14 +737,30 @@
 
 .ishibashi-web-clipper-library-list.is-columns-2 .ishibashi-web-clipper-library-card,
 .ishibashi-web-clipper-library-list.is-columns-3 .ishibashi-web-clipper-library-card {
+  min-height: 0;
   padding: 18px 18px 16px;
   border-left-width: 3px;
 }
 
 .ishibashi-web-clipper-library-list.is-columns-2 .ishibashi-web-clipper-library-card-top,
 .ishibashi-web-clipper-library-list.is-columns-3 .ishibashi-web-clipper-library-card-top {
-  grid-template-columns: 22px max-content minmax(58px, 1fr);
+  grid-template-columns: 22px minmax(0, 1fr);
   gap: 10px;
+}
+
+.ishibashi-web-clipper-library-list.is-columns-2 .ishibashi-web-clipper-library-date,
+.ishibashi-web-clipper-library-list.is-columns-3 .ishibashi-web-clipper-library-date {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: start;
+}
+
+.ishibashi-web-clipper-library-list.is-columns-2 .ishibashi-web-clipper-library-domain,
+.ishibashi-web-clipper-library-list.is-columns-3 .ishibashi-web-clipper-library-domain {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: stretch;
+  text-align: left;
 }
 
 .ishibashi-web-clipper-library-list.is-columns-2 .ishibashi-web-clipper-library-title,

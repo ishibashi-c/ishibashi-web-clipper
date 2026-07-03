@@ -89,7 +89,7 @@ var IshibashiWebClipper = class extends import_obsidian.Plugin {
       })
     );
     this.addRibbonIcon("library", this.t("ribbonOpenLibrary"), async () => {
-      await this.openClipLibrary("side");
+      await this.openClipLibrary();
     });
     this.addCommand({
       id: "clip-from-clipboard",
@@ -1002,11 +1002,18 @@ var WebClipLibraryView = class extends import_obsidian.ItemView {
         text: item.domain || item.site || this.plugin.t("libraryNoDomain"),
         cls: this.isSortKey("domain") ? "ishibashi-web-clipper-library-domain is-sort-key" : "ishibashi-web-clipper-library-domain"
       });
-      const title = card.createEl("button", {
+      const title = card.createDiv({
         text: item.title || item.file.basename,
         cls: this.isSortKey("title") ? "ishibashi-web-clipper-library-title is-sort-key" : "ishibashi-web-clipper-library-title"
       });
+      title.setAttr("role", "button");
+      title.setAttr("tabindex", "0");
       title.addEventListener("click", async () => {
+        await this.plugin.openFile(item.file.path);
+      });
+      title.addEventListener("keydown", async (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
         await this.plugin.openFile(item.file.path);
       });
       if (item.description) {
@@ -1054,14 +1061,15 @@ var WebClipLibraryView = class extends import_obsidian.ItemView {
         cls: "ishibashi-web-clipper-library-add-tag"
       });
       addTag.addEventListener("click", () => {
-        new WebClipTextInputModal(
+        new WebClipTagPickerModal(
           this.app,
           this.plugin,
+          this.items,
           this.plugin.t("libraryAddTag"),
-          this.plugin.t("libraryAddTagDesc"),
-          "",
-          async (value) => {
-            await this.addTags(item, splitTags(value));
+          [],
+          false,
+          async (tags) => {
+            await this.addTags(item, tags);
           }
         ).open();
       });
@@ -1144,24 +1152,69 @@ var WebClipLibraryView = class extends import_obsidian.ItemView {
       text: item.title || item.file.basename,
       cls: "ishibashi-web-clipper-library-edit-title"
     });
-    const folderInput = container.createEl("input", {
-      type: "text",
-      value: item.folder,
-      cls: "ishibashi-web-clipper-library-edit-input"
+    let selectedFolder = item.folder;
+    let selectedTags = [...item.tags];
+    const folderButton = container.createEl("button", {
+      text: selectedFolder || "/",
+      cls: "ishibashi-web-clipper-library-edit-picker"
     });
-    folderInput.setAttr("aria-label", this.plugin.t("fieldFolder"));
-    const tagsInput = container.createEl("textarea", {
-      cls: "ishibashi-web-clipper-library-edit-tags"
+    folderButton.setAttr("aria-label", this.plugin.t("fieldFolder"));
+    const tagPreview = container.createDiv({ cls: "ishibashi-web-clipper-library-edit-preview" });
+    const renderTagPreview = () => {
+      tagPreview.empty();
+      if (selectedTags.length === 0) {
+        tagPreview.createSpan({
+          text: this.plugin.t("summaryNoTags"),
+          cls: "ishibashi-web-clipper-library-muted"
+        });
+        return;
+      }
+      for (const tag of selectedTags) {
+        tagPreview.createSpan({
+          text: `#${tag}`,
+          cls: "ishibashi-web-clipper-library-tag"
+        });
+      }
+    };
+    renderTagPreview();
+    folderButton.addEventListener("click", () => {
+      new WebClipFolderPickerModal(
+        this.app,
+        this.plugin,
+        this.items,
+        this.plugin.t("libraryBulkMoveFolder"),
+        selectedFolder,
+        async (folder) => {
+          selectedFolder = folder;
+          folderButton.setText(folder || "/");
+        }
+      ).open();
     });
-    tagsInput.value = item.tags.join("\n");
-    tagsInput.setAttr("aria-label", this.plugin.t("fieldTags"));
+    const tagButton = container.createEl("button", {
+      text: this.plugin.t("libraryChooseTags"),
+      cls: "ishibashi-web-clipper-library-edit-picker"
+    });
+    tagButton.addEventListener("click", () => {
+      new WebClipTagPickerModal(
+        this.app,
+        this.plugin,
+        this.items,
+        this.plugin.t("libraryChooseTags"),
+        selectedTags,
+        true,
+        async (tags) => {
+          selectedTags = tags;
+          renderTagPreview();
+        }
+      ).open();
+    });
     const actions = container.createDiv({ cls: "ishibashi-web-clipper-library-edit-actions" });
     const apply = actions.createEl("button", {
       text: this.plugin.t("libraryEditApply"),
       cls: "mod-cta"
     });
     apply.addEventListener("click", async () => {
-      await this.applyOrganization(item, folderInput.value, splitTags(tagsInput.value));
+      await this.applyOrganization(item, selectedFolder, selectedTags);
     });
     const open = actions.createEl("button", {
       text: this.plugin.t("libraryOpenNote")
@@ -1178,40 +1231,42 @@ var WebClipLibraryView = class extends import_obsidian.ItemView {
     });
     const addTag = bar.createEl("button", { text: this.plugin.t("libraryBulkAddTag") });
     addTag.addEventListener("click", () => {
-      new WebClipTextInputModal(
+      new WebClipTagPickerModal(
         this.app,
         this.plugin,
+        this.items,
         this.plugin.t("libraryBulkAddTag"),
-        this.plugin.t("libraryAddTagDesc"),
-        "",
-        async (value) => {
-          await this.addTagsToSelected(splitTags(value));
+        [],
+        false,
+        async (tags) => {
+          await this.addTagsToSelected(tags);
         }
       ).open();
     });
     const removeTag = bar.createEl("button", { text: this.plugin.t("libraryBulkRemoveTag") });
     removeTag.addEventListener("click", () => {
-      new WebClipTextInputModal(
+      new WebClipTagPickerModal(
         this.app,
         this.plugin,
+        this.items,
         this.plugin.t("libraryBulkRemoveTag"),
-        this.plugin.t("libraryRemoveTagDesc"),
-        "",
-        async (value) => {
-          await this.removeTagsFromSelected(splitTags(value));
+        [],
+        false,
+        async (tags) => {
+          await this.removeTagsFromSelected(tags);
         }
       ).open();
     });
     const move = bar.createEl("button", { text: this.plugin.t("libraryBulkMoveFolder") });
     move.addEventListener("click", () => {
-      new WebClipTextInputModal(
+      new WebClipFolderPickerModal(
         this.app,
         this.plugin,
+        this.items,
         this.plugin.t("libraryBulkMoveFolder"),
-        this.plugin.t("libraryMoveFolderDesc"),
         this.getSelectedItem()?.folder || this.plugin.getDefaultTargetFolder(),
-        async (value) => {
-          await this.moveSelected(value);
+        async (folder) => {
+          await this.moveSelected(folder);
         }
       ).open();
     });
@@ -1401,13 +1456,15 @@ var WebClipLibraryView = class extends import_obsidian.ItemView {
     await this.load();
   }
 };
-var WebClipTextInputModal = class extends import_obsidian.Modal {
-  constructor(app, plugin, title, description, value, onSubmit) {
+var WebClipTagPickerModal = class extends import_obsidian.Modal {
+  constructor(app, plugin, items, title, selectedTags, replaceMode, onSubmit) {
     super(app);
     this.plugin = plugin;
+    this.items = items;
     this.title = title;
-    this.description = description;
-    this.value = value;
+    this.selected = new Set(selectedTags.map(normalizeTag).filter(Boolean));
+    this.replaceMode = replaceMode;
+    this.query = "";
     this.onSubmit = onSubmit;
     this.submitting = false;
   }
@@ -1417,22 +1474,32 @@ var WebClipTextInputModal = class extends import_obsidian.Modal {
   render() {
     const { contentEl } = this;
     contentEl.empty();
-    contentEl.addClass("ishibashi-web-clipper-edit");
+    contentEl.addClass("ishibashi-web-clipper-picker");
     contentEl.createEl("h2", { text: this.title });
-    if (this.description) {
-      contentEl.createEl("p", {
-        text: this.description,
-        cls: "ishibashi-web-clipper-modal-help"
+    const search = contentEl.createEl("input", {
+      type: "search",
+      placeholder: this.plugin.t("libraryTagSearchPlaceholder"),
+      cls: "ishibashi-web-clipper-library-edit-input"
+    });
+    search.value = this.query;
+    search.addEventListener("input", () => {
+      this.query = search.value;
+      this.render();
+    });
+    const list = contentEl.createDiv({ cls: "ishibashi-web-clipper-picker-list" });
+    for (const tag of this.getTags()) {
+      const row = list.createEl("label", { cls: "ishibashi-web-clipper-picker-row" });
+      const checkbox = row.createEl("input", { type: "checkbox" });
+      checkbox.checked = this.selected.has(tag);
+      checkbox.addEventListener("change", () => {
+        if (checkbox.checked) {
+          this.selected.add(tag);
+        } else {
+          this.selected.delete(tag);
+        }
       });
+      row.createSpan({ text: `#${tag}` });
     }
-    const input = contentEl.createEl("textarea", {
-      cls: "ishibashi-web-clipper-library-edit-tags"
-    });
-    input.value = this.value;
-    input.rows = 5;
-    input.addEventListener("input", () => {
-      this.value = input.value;
-    });
     new import_obsidian.Setting(contentEl).addButton((button) => {
       button.setButtonText(this.plugin.t("buttonCancel")).setDisabled(this.submitting).onClick(() => this.close());
     }).addButton((button) => {
@@ -1441,12 +1508,87 @@ var WebClipTextInputModal = class extends import_obsidian.Modal {
       });
     });
   }
+  getTags() {
+    const query = normalizeTag(this.query).toLowerCase();
+    return unique(this.items.flatMap((item) => item.tags)).filter((tag) => !query || tag.toLowerCase().includes(query)).sort((a, b) => a.localeCompare(b));
+  }
   async apply() {
     if (this.submitting) return;
     this.submitting = true;
-    this.render();
     try {
-      await this.onSubmit(this.value);
+      await this.onSubmit(Array.from(this.selected));
+      this.close();
+    } catch (error) {
+      console.error(error);
+      new import_obsidian.Notice(this.plugin.t("libraryEditFailed"));
+      this.submitting = false;
+      this.render();
+    }
+  }
+  onClose() {
+    this.contentEl.empty();
+  }
+};
+var WebClipFolderPickerModal = class extends import_obsidian.Modal {
+  constructor(app, plugin, items, title, selectedFolder, onSubmit) {
+    super(app);
+    this.plugin = plugin;
+    this.items = items;
+    this.title = title;
+    this.selectedFolder = normalizePath(selectedFolder);
+    this.query = "";
+    this.onSubmit = onSubmit;
+    this.submitting = false;
+  }
+  onOpen() {
+    this.render();
+  }
+  render() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.addClass("ishibashi-web-clipper-picker");
+    contentEl.createEl("h2", { text: this.title });
+    const search = contentEl.createEl("input", {
+      type: "search",
+      placeholder: this.plugin.t("libraryFolderSearchPlaceholder"),
+      cls: "ishibashi-web-clipper-library-edit-input"
+    });
+    search.value = this.query;
+    search.addEventListener("input", () => {
+      this.query = search.value;
+      this.render();
+    });
+    const list = contentEl.createDiv({ cls: "ishibashi-web-clipper-picker-list" });
+    for (const folder of this.getFolders()) {
+      const row = list.createEl("button", {
+        text: folder || "/",
+        cls: folder === this.selectedFolder ? "ishibashi-web-clipper-picker-row is-active" : "ishibashi-web-clipper-picker-row"
+      });
+      row.addEventListener("click", async () => {
+        this.selectedFolder = folder;
+        await this.apply();
+      });
+    }
+    new import_obsidian.Setting(contentEl).addButton((button) => {
+      button.setButtonText(this.plugin.t("buttonCancel")).setDisabled(this.submitting).onClick(() => this.close());
+    });
+  }
+  getFolders() {
+    const query = normalizePath(this.query).toLowerCase();
+    const configuredFolders = [
+      this.plugin.getDefaultTargetFolder(),
+      ...this.items.map((item) => item.folder).filter(Boolean)
+    ];
+    const roots = unique(configuredFolders.map((folder) => folder.split("/")[0]).filter(Boolean));
+    const vaultFolders = this.plugin.app.vault.getAllLoadedFiles().filter((file) => file instanceof import_obsidian.TFolder).map((folder) => folder.path).filter((folder) => roots.some((root) => folder === root || folder.startsWith(`${root}/`)));
+    const folders = unique([...configuredFolders, ...vaultFolders].filter(Boolean)).sort((a, b) => a.localeCompare(b));
+    return folders.filter((folder) => roots.length === 0 || roots.some((root) => folder === root || folder.startsWith(`${root}/`))).filter((folder) => !query || folder.toLowerCase().includes(query));
+  }
+  async apply() {
+    if (this.submitting) return;
+    this.submitting = true;
+    try {
+      await this.onSubmit(this.selectedFolder);
       this.close();
     } catch (error) {
       console.error(error);
@@ -1940,6 +2082,7 @@ var STRINGS = {
     libraryEditTab: "\u7DE8\u96C6",
     libraryEditTitle: "Web\u30AF\u30EA\u30C3\u30D7\u3092\u6574\u7406",
     libraryEditNoSelection: "\u7DE8\u96C6\u3059\u308BWeb\u30AF\u30EA\u30C3\u30D7\u3092\u9078\u629E\u3057\u3066\u304F\u3060\u3055\u3044\u3002",
+    libraryChooseTags: "\u30BF\u30B0\u3092\u9078\u629E",
     libraryEditFolderDesc: "\u79FB\u52D5\u5148\u30D5\u30A9\u30EB\u30C0\u3002\u5B58\u5728\u3057\u306A\u3044\u5834\u5408\u306F\u4F5C\u6210\u3057\u307E\u3059\u3002",
     libraryEditTagsDesc: "\u30BF\u30B0\u3092\u6539\u884C\u307E\u305F\u306F\u30AB\u30F3\u30DE\u533A\u5207\u308A\u3067\u8CBC\u308A\u4ED8\u3051\u3067\u304D\u307E\u3059\u3002",
     libraryEditApply: "\u5909\u66F4\u3092\u9069\u7528",
@@ -1952,6 +2095,8 @@ var STRINGS = {
     libraryRemoveTag: "{{tag}} \u3092\u524A\u9664",
     libraryRemoveTagDesc: "\u524A\u9664\u3059\u308B\u30BF\u30B0\u3092\u6539\u884C\u307E\u305F\u306F\u30AB\u30F3\u30DE\u533A\u5207\u308A\u3067\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002",
     libraryMoveFolderDesc: "\u79FB\u52D5\u5148\u30D5\u30A9\u30EB\u30C0\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002",
+    libraryTagSearchPlaceholder: "\u65E2\u5B58\u30BF\u30B0\u3092\u691C\u7D22",
+    libraryFolderSearchPlaceholder: "\u4FDD\u5B58\u5148\u30D5\u30A9\u30EB\u30C0\u3092\u691C\u7D22",
     libraryBulkSelected: "{{count}}\u4EF6\u3092\u9078\u629E\u4E2D",
     libraryBulkAddTag: "\u30BF\u30B0\u8FFD\u52A0",
     libraryBulkRemoveTag: "\u30BF\u30B0\u524A\u9664",
@@ -2108,6 +2253,7 @@ var STRINGS = {
     libraryEditTab: "Edit",
     libraryEditTitle: "Organize web clip",
     libraryEditNoSelection: "Select a web clip to edit.",
+    libraryChooseTags: "Choose tags",
     libraryEditFolderDesc: "Destination folder. It will be created if it does not exist.",
     libraryEditTagsDesc: "Paste tags separated by newlines or commas.",
     libraryEditApply: "Apply changes",
@@ -2120,6 +2266,8 @@ var STRINGS = {
     libraryRemoveTag: "Remove {{tag}}",
     libraryRemoveTagDesc: "Enter tags to remove, separated by newlines or commas.",
     libraryMoveFolderDesc: "Enter the destination folder.",
+    libraryTagSearchPlaceholder: "Search existing tags",
+    libraryFolderSearchPlaceholder: "Search destination folders",
     libraryBulkSelected: "{{count}} selected",
     libraryBulkAddTag: "Add tag",
     libraryBulkRemoveTag: "Remove tag",
