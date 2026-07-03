@@ -17,7 +17,7 @@ import {
   PROTOCOL_ACTION,
   VIEW_TYPE_CLIP_HISTORY,
   VIEW_TYPE_CLIP_LIBRARY,
-  WEB_CLIP_FOLDER_PRESET
+  getWebClipFolderPreset
 } from "./constants";
 import { translate } from "./i18n";
 import { mergeSettings } from "./settings";
@@ -293,14 +293,19 @@ export default class IshibashiWebClipper extends Plugin {
     });
   }
 
-  async applyFolderPreset() {
-    for (const folder of WEB_CLIP_FOLDER_PRESET.folders) {
+  getFolderPreset(language: "ja" | "en" = this.settings.language) {
+    return getWebClipFolderPreset(language);
+  }
+
+  async applyFolderPreset(language: "ja" | "en" = this.settings.language) {
+    const preset = this.getFolderPreset(language);
+    for (const folder of preset.folders) {
       await this.ensureFolder(folder);
     }
     this.settings.workflowMode = "inbox";
-    this.settings.inboxFolder = WEB_CLIP_FOLDER_PRESET.inbox;
-    this.settings.targetFolder = WEB_CLIP_FOLDER_PRESET.root;
-    this.settings.migrationTargetFolder = WEB_CLIP_FOLDER_PRESET.inbox;
+    this.settings.inboxFolder = preset.inbox;
+    this.settings.targetFolder = preset.root;
+    this.settings.migrationTargetFolder = preset.inbox;
     await this.saveSettings();
   }
 
@@ -700,11 +705,13 @@ export default class IshibashiWebClipper extends Plugin {
 class FirstRunModal extends Modal {
   plugin: IshibashiWebClipper;
   language: "ja" | "en";
+  createPreset: boolean;
 
   constructor(app: any, plugin: IshibashiWebClipper) {
     super(app);
     this.plugin = plugin;
     this.language = plugin.settings.language || "ja";
+    this.createPreset = false;
   }
 
   onOpen() {
@@ -731,15 +738,32 @@ class FirstRunModal extends Modal {
       });
 
     new Setting(contentEl)
+      .setName(translate(this.language, "firstRunPreset"))
+      .setDesc(translate(this.language, "firstRunPresetDesc"))
+      .addToggle((toggle) => {
+        toggle
+          .setValue(this.createPreset)
+          .onChange((value) => {
+            this.createPreset = value;
+          });
+      });
+
+    new Setting(contentEl)
       .addButton((button) => {
         button
           .setCta()
           .setButtonText(translate(this.language, "firstRunStart"))
           .onClick(async () => {
+            const preset = this.plugin.getFolderPreset(this.language);
             this.plugin.settings.language = this.language;
             this.plugin.settings.workflowMode = "inbox";
-            this.plugin.settings.inboxFolder = DEFAULT_SETTINGS.inboxFolder;
-            this.plugin.settings.migrationTargetFolder = DEFAULT_SETTINGS.migrationTargetFolder;
+            if (this.createPreset) {
+              await this.plugin.applyFolderPreset(this.language);
+            } else {
+              this.plugin.settings.inboxFolder = preset.inbox;
+              this.plugin.settings.targetFolder = preset.root;
+              this.plugin.settings.migrationTargetFolder = preset.inbox;
+            }
             this.plugin.settings.confirmBeforeSave = false;
             this.plugin.settings.fixedTags = this.plugin.getDefaultFixedTags(this.language);
             this.plugin.settings.setupCompleted = true;
@@ -2376,6 +2400,7 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
     });
 
     this.createSummary(containerEl);
+    this.createCaptureGuide(containerEl);
 
     const startSection = this.createSection(
       containerEl,
@@ -2645,10 +2670,28 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
       cls: "ishibashi-web-clipper-settings-summary-title"
     });
     const grid = summary.createDiv({ cls: "ishibashi-web-clipper-settings-summary-grid" });
-    this.addSummaryItem(grid, this.plugin.t("summaryWorkflow"), this.getWorkflowSummary());
     this.addSummaryItem(grid, this.plugin.t("summaryDestination"), this.getDestinationSummary());
     this.addSummaryItem(grid, this.plugin.t("summaryTags"), this.getTagsSummary());
     this.addSummaryItem(grid, this.plugin.t("summaryProtection"), this.getProtectionSummary());
+  }
+
+  createCaptureGuide(containerEl: HTMLElement) {
+    const guide = containerEl.createDiv({ cls: "ishibashi-web-clipper-settings-guide" });
+    guide.createEl("h3", {
+      text: this.plugin.t("captureGuideHeading"),
+      cls: "ishibashi-web-clipper-settings-summary-title"
+    });
+    const grid = guide.createDiv({ cls: "ishibashi-web-clipper-settings-guide-grid" });
+    this.addGuideItem(
+      grid,
+      this.plugin.t("captureGuideMobileTitle"),
+      this.plugin.t("captureGuideMobileDesc")
+    );
+    this.addGuideItem(
+      grid,
+      this.plugin.t("captureGuideDesktopTitle"),
+      this.plugin.t("captureGuideDesktopDesc")
+    );
   }
 
   refreshSummary() {
@@ -2657,10 +2700,14 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
     summary.remove();
     const h2 = this.containerEl.querySelector("h2");
     const intro = this.containerEl.querySelector(".ishibashi-web-clipper-settings-intro");
+    const guide = this.containerEl.querySelector(".ishibashi-web-clipper-settings-guide");
     this.createSummary(this.containerEl);
     const newSummary = this.containerEl.querySelector(".ishibashi-web-clipper-settings-summary");
     if (newSummary && (intro || h2)) {
       (intro || h2)?.insertAdjacentElement("afterend", newSummary);
+    }
+    if (guide && newSummary) {
+      newSummary.insertAdjacentElement("afterend", guide);
     }
   }
 
@@ -2676,8 +2723,16 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
     });
   }
 
-  getWorkflowSummary(): string {
-    return this.plugin.t("summaryInboxWorkflow");
+  addGuideItem(containerEl: HTMLElement, title: string, description: string) {
+    const item = containerEl.createDiv({ cls: "ishibashi-web-clipper-settings-guide-item" });
+    item.createDiv({
+      text: title,
+      cls: "ishibashi-web-clipper-settings-summary-label"
+    });
+    item.createDiv({
+      text: description,
+      cls: "ishibashi-web-clipper-settings-summary-value"
+    });
   }
 
   getDestinationSummary(): string {

@@ -1,4 +1,4 @@
-import { DEFAULT_FIXED_TAGS, DEFAULT_SETTINGS } from "./constants";
+import { DEFAULT_FIXED_TAGS, DEFAULT_SETTINGS, getWebClipFolderPreset } from "./constants";
 import { WebClipperSettings } from "./types";
 import {
   normalizeFileNameLength,
@@ -14,11 +14,13 @@ export function mergeSettings(saved): WebClipperSettings {
   settings.workflowMode = "inbox";
   settings.targetFolder = normalizePath(settings.targetFolder || DEFAULT_SETTINGS.targetFolder);
   settings.inboxFolder = normalizePath(settings.inboxFolder || DEFAULT_SETTINGS.inboxFolder);
-  if (settings.inboxFolder === "08_Webクリップ/10_未整理") {
-    settings.inboxFolder = DEFAULT_SETTINGS.inboxFolder;
+  const languagePreset = getWebClipFolderPreset(settings.language);
+  if (settings.inboxFolder === "08_Webクリップ/10_未整理" || settings.inboxFolder === "Web Clips/10_未整理") {
+    settings.inboxFolder = languagePreset.inbox;
+    settings.targetFolder = languagePreset.root;
   }
   settings.migrationTargetFolder = normalizePath(settings.migrationTargetFolder || settings.inboxFolder || DEFAULT_SETTINGS.migrationTargetFolder);
-  if (settings.migrationTargetFolder === "08_Webクリップ/10_未整理") {
+  if (settings.migrationTargetFolder === "08_Webクリップ/10_未整理" || settings.migrationTargetFolder === "Web Clips/10_未整理") {
     settings.migrationTargetFolder = settings.inboxFolder || DEFAULT_SETTINGS.migrationTargetFolder;
   }
   settings.fetchMetadata = settings.fetchMetadata ?? settings.fetchPageTitle ?? DEFAULT_SETTINGS.fetchMetadata;

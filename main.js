@@ -33,9 +33,9 @@ var DEFAULT_SETTINGS = {
   setupCompleted: false,
   language: "ja",
   workflowMode: "inbox",
-  targetFolder: "Web Clips",
-  inboxFolder: "Web Clips/10_\u672A\u6574\u7406",
-  migrationTargetFolder: "Web Clips/10_\u672A\u6574\u7406",
+  targetFolder: "web\u30AF\u30EA\u30C3\u30D7",
+  inboxFolder: "web\u30AF\u30EA\u30C3\u30D7/10_\u672A\u6574\u7406",
+  migrationTargetFolder: "web\u30AF\u30EA\u30C3\u30D7/10_\u672A\u6574\u7406",
   dateFormat: "YYYY-MM-DD HH:mm",
   noteTemplate: [
     "## Link",
@@ -68,21 +68,15 @@ var DEFAULT_FIXED_TAGS = {
   ja: ["web\u30AF\u30EA\u30C3\u30D7"],
   en: ["webclip"]
 };
-var WEB_CLIP_FOLDER_PRESET = {
-  root: "Web Clips",
-  inbox: "Web Clips/10_\u672A\u6574\u7406",
-  folders: [
-    "Web Clips/10_\u672A\u6574\u7406",
-    "Web Clips/20_\u6280\u8853",
-    "Web Clips/30_\u30D3\u30B8\u30CD\u30B9",
-    "Web Clips/40_\u793E\u4F1A",
-    "Web Clips/50_\u6587\u5316",
-    "Web Clips/60_\u751F\u6D3B",
-    "Web Clips/70_\u5B66\u7FD2",
-    "Web Clips/80_\u30C4\u30FC\u30EB",
-    "Web Clips/90_\u305D\u306E\u4ED6"
-  ]
-};
+function getWebClipFolderPreset(language) {
+  const root = language === "ja" ? "web\u30AF\u30EA\u30C3\u30D7" : "webclip";
+  const names = language === "ja" ? ["10_\u672A\u6574\u7406", "20_\u6280\u8853", "30_\u30D3\u30B8\u30CD\u30B9", "40_\u793E\u4F1A", "50_\u6587\u5316", "60_\u751F\u6D3B", "70_\u5B66\u7FD2", "80_\u30C4\u30FC\u30EB", "90_\u305D\u306E\u4ED6"] : ["10_Inbox", "20_Tech", "30_Business", "40_Society", "50_Culture", "60_Life", "70_Learning", "80_Tools", "90_Other"];
+  return {
+    root,
+    inbox: `${root}/${names[0]}`,
+    folders: names.map((name) => `${root}/${name}`)
+  };
+}
 
 // src/i18n.ts
 var STRINGS = {
@@ -107,14 +101,14 @@ var STRINGS = {
     noticeTargetFolder: "\u4FDD\u5B58\u5148",
     noticeFolderPresetApplied: "\u30D5\u30A9\u30EB\u30C0\u30D7\u30EA\u30BB\u30C3\u30C8\u3092\u4F5C\u6210\u3057\u307E\u3057\u305F\u3002",
     firstRunDesc: "\u6700\u521D\u306B\u8868\u793A\u8A00\u8A9E\u3092\u9078\u3093\u3067\u304F\u3060\u3055\u3044\u3002Web\u30AF\u30EA\u30C3\u30D7\u306F\u672A\u6574\u7406\u30D5\u30A9\u30EB\u30C0\u306B\u4FDD\u5B58\u3055\u308C\u3001\u5F8C\u304B\u3089\u6574\u7406\u3067\u304D\u307E\u3059\u3002",
+    firstRunPreset: "\u5206\u985E\u30D5\u30A9\u30EB\u30C0\u30D7\u30EA\u30BB\u30C3\u30C8\u3092\u4F5C\u6210\u3059\u308B",
+    firstRunPresetDesc: "web\u30AF\u30EA\u30C3\u30D7\u914D\u4E0B\u306B 10_\u672A\u6574\u7406\u300120_\u6280\u8853\u300130_\u30D3\u30B8\u30CD\u30B9... \u306E\u30D5\u30A9\u30EB\u30C0\u69CB\u6210\u3092\u4F5C\u6210\u3057\u307E\u3059\u3002\u5F8C\u304B\u3089\u8A2D\u5B9A\u753B\u9762\u3067\u8FFD\u52A0\u3059\u308B\u3053\u3068\u3082\u3067\u304D\u307E\u3059\u3002",
     firstRunStart: "\u958B\u59CB",
     settingsIntro: "\u30B9\u30DE\u30DB\u5171\u6709\u3001\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u30EC\u30C3\u30C8\u3001\u30AF\u30EA\u30C3\u30D7\u30DC\u30FC\u30C9\u4FDD\u5B58\u3067\u4F5C\u6210\u3055\u308C\u308B\u30CE\u30FC\u30C8\u306E\u4FDD\u5B58\u30EB\u30FC\u30EB\u3092\u307E\u3068\u3081\u3066\u7BA1\u7406\u3057\u307E\u3059\u3002",
     summaryHeading: "\u73FE\u5728\u306E\u4FDD\u5B58\u30EB\u30FC\u30EB",
-    summaryWorkflow: "\u6D41\u308C",
     summaryDestination: "\u4FDD\u5B58\u5148",
     summaryTags: "\u4ED8\u4E0E\u30BF\u30B0",
     summaryProtection: "\u4FDD\u5B58\u4FDD\u8B77",
-    summaryInboxWorkflow: "\u672A\u6574\u7406\u306B\u5165\u308C\u3066\u5F8C\u3067\u6574\u7406",
     summaryNoTags: "\u30BF\u30B0\u306A\u3057",
     summaryDuplicateOn: "\u91CD\u8907URL\u3092\u9632\u6B62",
     summaryDuplicateOff: "\u91CD\u8907URL\u3092\u8A31\u53EF",
@@ -140,8 +134,13 @@ var STRINGS = {
     settingInboxFolder: "\u6574\u7406\u5F85\u3061\u30D5\u30A9\u30EB\u30C0",
     settingInboxFolderDesc: "\u3059\u3079\u3066\u306E\u30AF\u30EA\u30C3\u30D7\u3092\u307E\u305A\u4FDD\u5B58\u3059\u308B\u30D5\u30A9\u30EB\u30C0\u3002",
     settingFolderPreset: "\u5206\u985E\u30D5\u30A9\u30EB\u30C0\u30D7\u30EA\u30BB\u30C3\u30C8",
-    settingFolderPresetDesc: "Web Clips\u914D\u4E0B\u306B 10_\u672A\u6574\u7406\u300120_\u6280\u8853\u300130_\u30D3\u30B8\u30CD\u30B9\u300140_\u793E\u4F1A... \u306E\u30D5\u30A9\u30EB\u30C0\u69CB\u6210\u3092\u4F5C\u6210\u3057\u307E\u3059\u3002\u65E2\u5B58\u30D5\u30A9\u30EB\u30C0\u306F\u4E0A\u66F8\u304D\u3057\u307E\u305B\u3093\u3002",
+    settingFolderPresetDesc: "web\u30AF\u30EA\u30C3\u30D7\u914D\u4E0B\u306B 10_\u672A\u6574\u7406\u300120_\u6280\u8853\u300130_\u30D3\u30B8\u30CD\u30B9\u300140_\u793E\u4F1A... \u306E\u30D5\u30A9\u30EB\u30C0\u69CB\u6210\u3092\u4F5C\u6210\u3057\u307E\u3059\u3002\u65E2\u5B58\u30D5\u30A9\u30EB\u30C0\u306F\u4E0A\u66F8\u304D\u3057\u307E\u305B\u3093\u3002",
     settingFolderPresetButton: "\u30D7\u30EA\u30BB\u30C3\u30C8\u3092\u4F5C\u6210",
+    captureGuideHeading: "Web\u3092\u30AF\u30EA\u30C3\u30D7\u3059\u308B\u65B9\u6CD5",
+    captureGuideMobileTitle: "\u30B9\u30DE\u30DB\u30D6\u30E9\u30A6\u30B6",
+    captureGuideMobileDesc: "\u30D6\u30E9\u30A6\u30B6\u3084\u30A2\u30D7\u30EA\u306E\u5171\u6709\u30E1\u30CB\u30E5\u30FC\u304B\u3089Obsidian\u3078\u5171\u6709\u3057\u3001\u30A6\u30A7\u30D6\u30AF\u30EA\u30C3\u30D7\u306B\u4FDD\u5B58\u3092\u9078\u3073\u307E\u3059\u3002",
+    captureGuideDesktopTitle: "\u30D1\u30BD\u30B3\u30F3\u30D6\u30E9\u30A6\u30B6",
+    captureGuideDesktopDesc: "\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u30EC\u30C3\u30C8\u3092\u30D6\u30E9\u30A6\u30B6\u306E\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u306B\u767B\u9332\u3057\u3001\u4FDD\u5B58\u3057\u305F\u3044\u30DA\u30FC\u30B8\u4E0A\u3067\u5B9F\u884C\u3057\u307E\u3059\u3002",
     settingConfirm: "\u4FDD\u5B58\u524D\u306B\u78BA\u8A8D\u3059\u308B",
     settingConfirmDesc: "\u30BF\u30A4\u30C8\u30EB\u3001\u4FDD\u5B58\u5148\u3001\u30BF\u30B0\u3001\u30E1\u30E2\u3092\u4FDD\u5B58\u524D\u306B\u7DE8\u96C6\u3057\u307E\u3059\u3002",
     settingOpenAfterClip: "\u4FDD\u5B58\u5F8C\u306B\u30CE\u30FC\u30C8\u3092\u958B\u304F",
@@ -278,14 +277,14 @@ var STRINGS = {
     noticeTargetFolder: "Destination",
     noticeFolderPresetApplied: "Created the folder preset.",
     firstRunDesc: "Choose your display language. Web clips are collected in an inbox folder so you can organize them later.",
+    firstRunPreset: "Create the classification folder preset",
+    firstRunPresetDesc: "Creates a folder structure under webclip, such as 10_Inbox, 20_Tech, and 30_Business. You can also add it later from settings.",
     firstRunStart: "Start",
     settingsIntro: "Manage how notes are created from mobile sharing, bookmarklets, and clipboard saves.",
     summaryHeading: "Current save rules",
-    summaryWorkflow: "Flow",
     summaryDestination: "Destination",
     summaryTags: "Tags",
     summaryProtection: "Save protection",
-    summaryInboxWorkflow: "Collect in Inbox and organize later",
     summaryNoTags: "No tags",
     summaryDuplicateOn: "Duplicate URLs blocked",
     summaryDuplicateOff: "Duplicate URLs allowed",
@@ -311,8 +310,13 @@ var STRINGS = {
     settingInboxFolder: "Inbox folder",
     settingInboxFolderDesc: "Folder where all new clips are first saved.",
     settingFolderPreset: "Classification folder preset",
-    settingFolderPresetDesc: "Creates folders under Web Clips such as 10_\u672A\u6574\u7406, 20_\u6280\u8853, 30_\u30D3\u30B8\u30CD\u30B9, 40_\u793E\u4F1A, and more. Existing folders are not overwritten.",
+    settingFolderPresetDesc: "Creates folders under webclip such as 10_Inbox, 20_Tech, 30_Business, 40_Society, and more. Existing folders are not overwritten.",
     settingFolderPresetButton: "Create preset",
+    captureGuideHeading: "How to clip the web",
+    captureGuideMobileTitle: "Mobile browser",
+    captureGuideMobileDesc: "Use the browser or app share menu, share to Obsidian, then choose Save to Web Clips.",
+    captureGuideDesktopTitle: "Desktop browser",
+    captureGuideDesktopDesc: "Add the bookmarklet to your browser bookmarks, then run it on the page you want to save.",
     settingConfirm: "Confirm before saving",
     settingConfirmDesc: "Edit title, folder, tags, and memo before creating a note.",
     settingOpenAfterClip: "Open note after saving",
@@ -741,11 +745,13 @@ function mergeSettings(saved) {
   settings.workflowMode = "inbox";
   settings.targetFolder = normalizePath(settings.targetFolder || DEFAULT_SETTINGS.targetFolder);
   settings.inboxFolder = normalizePath(settings.inboxFolder || DEFAULT_SETTINGS.inboxFolder);
-  if (settings.inboxFolder === "08_Web\u30AF\u30EA\u30C3\u30D7/10_\u672A\u6574\u7406") {
-    settings.inboxFolder = DEFAULT_SETTINGS.inboxFolder;
+  const languagePreset = getWebClipFolderPreset(settings.language);
+  if (settings.inboxFolder === "08_Web\u30AF\u30EA\u30C3\u30D7/10_\u672A\u6574\u7406" || settings.inboxFolder === "Web Clips/10_\u672A\u6574\u7406") {
+    settings.inboxFolder = languagePreset.inbox;
+    settings.targetFolder = languagePreset.root;
   }
   settings.migrationTargetFolder = normalizePath(settings.migrationTargetFolder || settings.inboxFolder || DEFAULT_SETTINGS.migrationTargetFolder);
-  if (settings.migrationTargetFolder === "08_Web\u30AF\u30EA\u30C3\u30D7/10_\u672A\u6574\u7406") {
+  if (settings.migrationTargetFolder === "08_Web\u30AF\u30EA\u30C3\u30D7/10_\u672A\u6574\u7406" || settings.migrationTargetFolder === "Web Clips/10_\u672A\u6574\u7406") {
     settings.migrationTargetFolder = settings.inboxFolder || DEFAULT_SETTINGS.migrationTargetFolder;
   }
   settings.fetchMetadata = settings.fetchMetadata ?? settings.fetchPageTitle ?? DEFAULT_SETTINGS.fetchMetadata;
@@ -935,14 +941,18 @@ var IshibashiWebClipper = class extends import_obsidian2.Plugin {
       return normalized.length === defaultTags.length && normalized.every((tag, index) => tag === defaultTags[index]);
     });
   }
-  async applyFolderPreset() {
-    for (const folder of WEB_CLIP_FOLDER_PRESET.folders) {
+  getFolderPreset(language = this.settings.language) {
+    return getWebClipFolderPreset(language);
+  }
+  async applyFolderPreset(language = this.settings.language) {
+    const preset = this.getFolderPreset(language);
+    for (const folder of preset.folders) {
       await this.ensureFolder(folder);
     }
     this.settings.workflowMode = "inbox";
-    this.settings.inboxFolder = WEB_CLIP_FOLDER_PRESET.inbox;
-    this.settings.targetFolder = WEB_CLIP_FOLDER_PRESET.root;
-    this.settings.migrationTargetFolder = WEB_CLIP_FOLDER_PRESET.inbox;
+    this.settings.inboxFolder = preset.inbox;
+    this.settings.targetFolder = preset.root;
+    this.settings.migrationTargetFolder = preset.inbox;
     await this.saveSettings();
   }
   async resolveMetadata(url, sharedTitle) {
@@ -1274,6 +1284,7 @@ var FirstRunModal = class extends import_obsidian2.Modal {
     super(app);
     this.plugin = plugin;
     this.language = plugin.settings.language || "ja";
+    this.createPreset = false;
   }
   onOpen() {
     const { contentEl } = this;
@@ -1289,12 +1300,23 @@ var FirstRunModal = class extends import_obsidian2.Modal {
         this.onOpen();
       });
     });
+    new import_obsidian2.Setting(contentEl).setName(translate(this.language, "firstRunPreset")).setDesc(translate(this.language, "firstRunPresetDesc")).addToggle((toggle) => {
+      toggle.setValue(this.createPreset).onChange((value) => {
+        this.createPreset = value;
+      });
+    });
     new import_obsidian2.Setting(contentEl).addButton((button) => {
       button.setCta().setButtonText(translate(this.language, "firstRunStart")).onClick(async () => {
+        const preset = this.plugin.getFolderPreset(this.language);
         this.plugin.settings.language = this.language;
         this.plugin.settings.workflowMode = "inbox";
-        this.plugin.settings.inboxFolder = DEFAULT_SETTINGS.inboxFolder;
-        this.plugin.settings.migrationTargetFolder = DEFAULT_SETTINGS.migrationTargetFolder;
+        if (this.createPreset) {
+          await this.plugin.applyFolderPreset(this.language);
+        } else {
+          this.plugin.settings.inboxFolder = preset.inbox;
+          this.plugin.settings.targetFolder = preset.root;
+          this.plugin.settings.migrationTargetFolder = preset.inbox;
+        }
         this.plugin.settings.confirmBeforeSave = false;
         this.plugin.settings.fixedTags = this.plugin.getDefaultFixedTags(this.language);
         this.plugin.settings.setupCompleted = true;
@@ -2469,6 +2491,7 @@ var IshibashiWebClipperSettingTab = class extends import_obsidian2.PluginSetting
       cls: "ishibashi-web-clipper-settings-intro"
     });
     this.createSummary(containerEl);
+    this.createCaptureGuide(containerEl);
     const startSection = this.createSection(
       containerEl,
       this.plugin.t("sectionStart"),
@@ -2644,10 +2667,27 @@ var IshibashiWebClipperSettingTab = class extends import_obsidian2.PluginSetting
       cls: "ishibashi-web-clipper-settings-summary-title"
     });
     const grid = summary.createDiv({ cls: "ishibashi-web-clipper-settings-summary-grid" });
-    this.addSummaryItem(grid, this.plugin.t("summaryWorkflow"), this.getWorkflowSummary());
     this.addSummaryItem(grid, this.plugin.t("summaryDestination"), this.getDestinationSummary());
     this.addSummaryItem(grid, this.plugin.t("summaryTags"), this.getTagsSummary());
     this.addSummaryItem(grid, this.plugin.t("summaryProtection"), this.getProtectionSummary());
+  }
+  createCaptureGuide(containerEl) {
+    const guide = containerEl.createDiv({ cls: "ishibashi-web-clipper-settings-guide" });
+    guide.createEl("h3", {
+      text: this.plugin.t("captureGuideHeading"),
+      cls: "ishibashi-web-clipper-settings-summary-title"
+    });
+    const grid = guide.createDiv({ cls: "ishibashi-web-clipper-settings-guide-grid" });
+    this.addGuideItem(
+      grid,
+      this.plugin.t("captureGuideMobileTitle"),
+      this.plugin.t("captureGuideMobileDesc")
+    );
+    this.addGuideItem(
+      grid,
+      this.plugin.t("captureGuideDesktopTitle"),
+      this.plugin.t("captureGuideDesktopDesc")
+    );
   }
   refreshSummary() {
     const summary = this.containerEl.querySelector(".ishibashi-web-clipper-settings-summary");
@@ -2655,10 +2695,14 @@ var IshibashiWebClipperSettingTab = class extends import_obsidian2.PluginSetting
     summary.remove();
     const h2 = this.containerEl.querySelector("h2");
     const intro = this.containerEl.querySelector(".ishibashi-web-clipper-settings-intro");
+    const guide = this.containerEl.querySelector(".ishibashi-web-clipper-settings-guide");
     this.createSummary(this.containerEl);
     const newSummary = this.containerEl.querySelector(".ishibashi-web-clipper-settings-summary");
     if (newSummary && (intro || h2)) {
       (intro || h2)?.insertAdjacentElement("afterend", newSummary);
+    }
+    if (guide && newSummary) {
+      newSummary.insertAdjacentElement("afterend", guide);
     }
   }
   addSummaryItem(containerEl, label, value) {
@@ -2672,8 +2716,16 @@ var IshibashiWebClipperSettingTab = class extends import_obsidian2.PluginSetting
       cls: "ishibashi-web-clipper-settings-summary-value"
     });
   }
-  getWorkflowSummary() {
-    return this.plugin.t("summaryInboxWorkflow");
+  addGuideItem(containerEl, title, description) {
+    const item = containerEl.createDiv({ cls: "ishibashi-web-clipper-settings-guide-item" });
+    item.createDiv({
+      text: title,
+      cls: "ishibashi-web-clipper-settings-summary-label"
+    });
+    item.createDiv({
+      text: description,
+      cls: "ishibashi-web-clipper-settings-summary-value"
+    });
   }
   getDestinationSummary() {
     return this.plugin.settings.inboxFolder || DEFAULT_SETTINGS.inboxFolder;
