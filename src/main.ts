@@ -2598,17 +2598,6 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
         });
     });
 
-    const browserSection = this.createSection(
-      containerEl,
-      this.plugin.t("sectionBrowser"),
-      this.plugin.t("sectionBrowserDesc")
-    );
-    const example = `obsidian://${PROTOCOL_ACTION}?url=https%3A%2F%2Fexample.com&title=Example`;
-    browserSection.createEl("code", {
-      text: example,
-      cls: "ishibashi-web-clipper-code"
-    });
-
     const maintenanceSection = this.createSection(
       containerEl,
       this.plugin.t("sectionMaintenance"),
@@ -2692,6 +2681,29 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
       this.plugin.t("captureGuideDesktopTitle"),
       this.plugin.t("captureGuideDesktopDesc")
     );
+    guide.createEl("h4", {
+      text: this.plugin.t("bookmarkletStepsTitle"),
+      cls: "ishibashi-web-clipper-subheading"
+    });
+    const steps = guide.createEl("ol", {
+      cls: "ishibashi-web-clipper-steps"
+    });
+    [
+      "bookmarkletStep1",
+      "bookmarkletStep2",
+      "bookmarkletStep3",
+      "bookmarkletStep4"
+    ].forEach((key) => {
+      steps.createEl("li", { text: this.plugin.t(key) });
+    });
+    guide.createEl("p", {
+      text: this.plugin.t("bookmarkletCodeLabel"),
+      cls: "ishibashi-web-clipper-section-note"
+    });
+    guide.createEl("code", {
+      text: this.getBookmarkletCode(),
+      cls: "ishibashi-web-clipper-code"
+    });
   }
 
   refreshSummary() {
@@ -2733,6 +2745,10 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
       text: description,
       cls: "ishibashi-web-clipper-settings-summary-value"
     });
+  }
+
+  getBookmarkletCode(): string {
+    return `javascript:(()=>{const e=encodeURIComponent;const url=location.href;const title=document.title||"";const selection=window.getSelection?String(window.getSelection()).trim():"";let target=\`obsidian://${PROTOCOL_ACTION}?url=${"${e(url)}"}&title=${"${e(title)}"}\`;if(selection)target+=\`&note=${"${e(selection.slice(0,1500))}"}\`;location.href=target;})();`;
   }
 
   getDestinationSummary(): string {

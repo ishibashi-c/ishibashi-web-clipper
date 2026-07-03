@@ -125,7 +125,7 @@ var STRINGS = {
     sectionTemplate: "\u30CE\u30FC\u30C8\u672C\u6587",
     sectionTemplateDesc: "\u4F5C\u6210\u3055\u308C\u308BMarkdown\u30CE\u30FC\u30C8\u306E\u672C\u6587\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3067\u3059\u3002",
     sectionBrowser: "\u30D6\u30E9\u30A6\u30B6\u304B\u3089\u4FDD\u5B58",
-    sectionBrowserDesc: "PC\u30D6\u30E9\u30A6\u30B6\u306E\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u30EC\u30C3\u30C8\u306A\u3069\u304B\u3089\u547C\u3073\u51FA\u3059\u5171\u6709URL\u306E\u5F62\u5F0F\u3067\u3059\u3002",
+    sectionBrowserDesc: "\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u30EC\u30C3\u30C8\u306F\u3001\u30D6\u30E9\u30A6\u30B6\u306E\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u306BJavaScript\u30B3\u30FC\u30C9\u3092\u4FDD\u5B58\u3057\u3066\u3001\u8868\u793A\u4E2D\u306E\u30DA\u30FC\u30B8\u3092Obsidian\u3078\u9001\u308B\u4ED5\u7D44\u307F\u3067\u3059\u3002",
     sectionMaintenance: "\u65E2\u5B58\u30AF\u30EA\u30C3\u30D7\u306E\u6574\u7406",
     sectionMaintenanceDesc: "\u904E\u53BB\u306B\u4F5C\u6210\u3057\u305FWeb\u30AF\u30EA\u30C3\u30D7\u3092\u3001\u73FE\u5728\u306E\u4FDD\u5B58\u30EB\u30FC\u30EB\u306B\u5408\u308F\u305B\u3066frontmatter\u3060\u3051\u6574\u3048\u307E\u3059\u3002",
     settingLanguage: "\u8A00\u8A9E",
@@ -140,7 +140,13 @@ var STRINGS = {
     captureGuideMobileTitle: "\u30B9\u30DE\u30DB\u30D6\u30E9\u30A6\u30B6",
     captureGuideMobileDesc: "\u30D6\u30E9\u30A6\u30B6\u3084\u30A2\u30D7\u30EA\u306E\u5171\u6709\u30E1\u30CB\u30E5\u30FC\u304B\u3089Obsidian\u3078\u5171\u6709\u3057\u3001\u30A6\u30A7\u30D6\u30AF\u30EA\u30C3\u30D7\u306B\u4FDD\u5B58\u3092\u9078\u3073\u307E\u3059\u3002",
     captureGuideDesktopTitle: "\u30D1\u30BD\u30B3\u30F3\u30D6\u30E9\u30A6\u30B6",
-    captureGuideDesktopDesc: "\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u30EC\u30C3\u30C8\u3092\u30D6\u30E9\u30A6\u30B6\u306E\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u306B\u767B\u9332\u3057\u3001\u4FDD\u5B58\u3057\u305F\u3044\u30DA\u30FC\u30B8\u4E0A\u3067\u5B9F\u884C\u3057\u307E\u3059\u3002",
+    captureGuideDesktopDesc: "\u4E0B\u306EJavaScript\u30B3\u30FC\u30C9\u3092\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u306EURL\u6B04\u306B\u767B\u9332\u3057\u3001\u4FDD\u5B58\u3057\u305F\u3044\u30DA\u30FC\u30B8\u4E0A\u3067\u5B9F\u884C\u3057\u307E\u3059\u3002",
+    bookmarkletStepsTitle: "\u8A2D\u5B9A\u624B\u9806",
+    bookmarkletStep1: "1. \u30D6\u30E9\u30A6\u30B6\u306E\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u30D0\u30FC\u3092\u8868\u793A\u3057\u307E\u3059\u3002",
+    bookmarkletStep2: "2. \u4EFB\u610F\u306EWeb\u30DA\u30FC\u30B8\u3092\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u3059\u308B\u304B\u3001\u65B0\u3057\u3044\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u3092\u8FFD\u52A0\u3057\u307E\u3059\u3002",
+    bookmarkletStep3: "3. \u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u306E\u7DE8\u96C6\u753B\u9762\u3092\u958B\u304D\u3001\u540D\u524D\u3092\u5206\u304B\u308A\u3084\u3059\u304F\u5909\u66F4\u3057\u307E\u3059\u3002",
+    bookmarkletStep4: "4. URL\u6B04\u306B\u4E0B\u306EJavaScript\u30B3\u30FC\u30C9\u3092\u8CBC\u308A\u4ED8\u3051\u3066\u4FDD\u5B58\u3057\u307E\u3059\u3002",
+    bookmarkletCodeLabel: "\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u306EURL\u6B04\u306B\u8CBC\u308A\u4ED8\u3051\u308B\u30B3\u30FC\u30C9",
     settingConfirm: "\u4FDD\u5B58\u524D\u306B\u78BA\u8A8D\u3059\u308B",
     settingConfirmDesc: "\u30BF\u30A4\u30C8\u30EB\u3001\u4FDD\u5B58\u5148\u3001\u30BF\u30B0\u3001\u30E1\u30E2\u3092\u4FDD\u5B58\u524D\u306B\u7DE8\u96C6\u3057\u307E\u3059\u3002",
     settingOpenAfterClip: "\u4FDD\u5B58\u5F8C\u306B\u30CE\u30FC\u30C8\u3092\u958B\u304F",
@@ -301,7 +307,7 @@ var STRINGS = {
     sectionTemplate: "Note body",
     sectionTemplateDesc: "Markdown template used when creating a web clip note.",
     sectionBrowser: "Browser capture",
-    sectionBrowserDesc: "URL format used by browser bookmarklets and other external launchers.",
+    sectionBrowserDesc: "A bookmarklet saves JavaScript code as a browser bookmark and sends the current page to Obsidian.",
     sectionMaintenance: "Existing clips",
     sectionMaintenanceDesc: "Update old web clip frontmatter to match the current save rules.",
     settingLanguage: "Language",
@@ -316,7 +322,13 @@ var STRINGS = {
     captureGuideMobileTitle: "Mobile browser",
     captureGuideMobileDesc: "Use the browser or app share menu, share to Obsidian, then choose Save to Web Clips.",
     captureGuideDesktopTitle: "Desktop browser",
-    captureGuideDesktopDesc: "Add the bookmarklet to your browser bookmarks, then run it on the page you want to save.",
+    captureGuideDesktopDesc: "Paste the JavaScript code below into a bookmark URL, then run it on the page you want to save.",
+    bookmarkletStepsTitle: "Setup steps",
+    bookmarkletStep1: "1. Show your browser bookmarks bar.",
+    bookmarkletStep2: "2. Bookmark any web page, or add a new bookmark.",
+    bookmarkletStep3: "3. Open the bookmark edit screen and give it a clear name.",
+    bookmarkletStep4: "4. Paste the JavaScript code below into the URL field and save it.",
+    bookmarkletCodeLabel: "Code to paste into the bookmark URL field",
     settingConfirm: "Confirm before saving",
     settingConfirmDesc: "Edit title, folder, tags, and memo before creating a note.",
     settingOpenAfterClip: "Open note after saving",
@@ -2618,16 +2630,6 @@ var IshibashiWebClipperSettingTab = class extends import_obsidian2.PluginSetting
         await this.plugin.saveSettings();
       });
     });
-    const browserSection = this.createSection(
-      containerEl,
-      this.plugin.t("sectionBrowser"),
-      this.plugin.t("sectionBrowserDesc")
-    );
-    const example = `obsidian://${PROTOCOL_ACTION}?url=https%3A%2F%2Fexample.com&title=Example`;
-    browserSection.createEl("code", {
-      text: example,
-      cls: "ishibashi-web-clipper-code"
-    });
     const maintenanceSection = this.createSection(
       containerEl,
       this.plugin.t("sectionMaintenance"),
@@ -2688,6 +2690,29 @@ var IshibashiWebClipperSettingTab = class extends import_obsidian2.PluginSetting
       this.plugin.t("captureGuideDesktopTitle"),
       this.plugin.t("captureGuideDesktopDesc")
     );
+    guide.createEl("h4", {
+      text: this.plugin.t("bookmarkletStepsTitle"),
+      cls: "ishibashi-web-clipper-subheading"
+    });
+    const steps = guide.createEl("ol", {
+      cls: "ishibashi-web-clipper-steps"
+    });
+    [
+      "bookmarkletStep1",
+      "bookmarkletStep2",
+      "bookmarkletStep3",
+      "bookmarkletStep4"
+    ].forEach((key) => {
+      steps.createEl("li", { text: this.plugin.t(key) });
+    });
+    guide.createEl("p", {
+      text: this.plugin.t("bookmarkletCodeLabel"),
+      cls: "ishibashi-web-clipper-section-note"
+    });
+    guide.createEl("code", {
+      text: this.getBookmarkletCode(),
+      cls: "ishibashi-web-clipper-code"
+    });
   }
   refreshSummary() {
     const summary = this.containerEl.querySelector(".ishibashi-web-clipper-settings-summary");
@@ -2726,6 +2751,9 @@ var IshibashiWebClipperSettingTab = class extends import_obsidian2.PluginSetting
       text: description,
       cls: "ishibashi-web-clipper-settings-summary-value"
     });
+  }
+  getBookmarkletCode() {
+    return `javascript:(()=>{const e=encodeURIComponent;const url=location.href;const title=document.title||"";const selection=window.getSelection?String(window.getSelection()).trim():"";let target=\`obsidian://${PROTOCOL_ACTION}?url=${"${e(url)}"}&title=${"${e(title)}"}\`;if(selection)target+=\`&note=${"${e(selection.slice(0,1500))}"}\`;location.href=target;})();`;
   }
   getDestinationSummary() {
     return this.plugin.settings.inboxFolder || DEFAULT_SETTINGS.inboxFolder;

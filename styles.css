@@ -72,6 +72,18 @@
   font-size: 1.1em;
 }
 
+.ishibashi-web-clipper-subheading {
+  margin: 16px 0 8px;
+  font-size: 0.95em;
+}
+
+.ishibashi-web-clipper-steps {
+  margin: 0 0 14px;
+  padding-left: 1.4em;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
 .ishibashi-web-clipper-settings-section-desc,
 .ishibashi-web-clipper-section-note {
   max-width: 680px;
