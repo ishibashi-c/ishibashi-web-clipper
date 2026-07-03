@@ -174,6 +174,35 @@
   line-height: 1.18;
 }
 
+.ishibashi-web-clipper-library-refresh {
+  position: relative;
+  min-width: 72px;
+}
+
+.ishibashi-web-clipper-library-refresh.is-loading {
+  opacity: 0.92;
+  cursor: wait;
+}
+
+.ishibashi-web-clipper-library-refresh.is-loading::before {
+  content: "";
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 8px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  vertical-align: -2px;
+  animation: ishibashi-web-clipper-spin 800ms linear infinite;
+}
+
+@keyframes ishibashi-web-clipper-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .ishibashi-web-clipper-library-subtitle,
 .ishibashi-web-clipper-library-muted,
 .ishibashi-web-clipper-library-count {
@@ -415,8 +444,7 @@
   border-left: 4px solid var(--iwc-library-rule);
   border-radius: 4px;
   background: var(--background-primary);
-  contain: layout paint;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .ishibashi-web-clipper-library-card-body {
@@ -426,7 +454,7 @@
   flex: 1 1 auto;
   flex-direction: column;
   padding-bottom: 10px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .ishibashi-web-clipper-library-card.is-selected {
@@ -649,7 +677,7 @@
   justify-content: space-between;
   gap: 12px;
   min-height: 32px;
-  margin-top: 14px;
+  margin-top: auto;
   padding-top: 12px;
   border-top: 1px solid var(--iwc-library-rule);
   background: var(--background-primary);

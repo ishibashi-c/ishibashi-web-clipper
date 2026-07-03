@@ -962,6 +962,7 @@ class WebClipLibraryView extends ItemView {
   selectedPath: string;
   selectedPaths: Set<string>;
   loading: boolean;
+  hasLoaded: boolean;
 
   constructor(leaf: any, plugin: IshibashiWebClipper) {
     super(leaf);
@@ -978,6 +979,7 @@ class WebClipLibraryView extends ItemView {
     this.selectedPath = "";
     this.selectedPaths = new Set();
     this.loading = false;
+    this.hasLoaded = false;
   }
 
   getViewType() {
@@ -1011,6 +1013,7 @@ class WebClipLibraryView extends ItemView {
     if (this.selectedPath && !this.items.some((item) => item.file.path === this.selectedPath)) {
       this.selectedPath = "";
     }
+    this.hasLoaded = true;
     this.loading = false;
     this.render();
   }
@@ -1029,14 +1032,16 @@ class WebClipLibraryView extends ItemView {
       cls: "ishibashi-web-clipper-library-subtitle"
     });
     const refresh = header.createEl("button", {
-      text: this.plugin.t("libraryRefresh"),
-      cls: "mod-cta"
+      text: this.loading ? this.plugin.t("libraryRefreshing") : this.plugin.t("libraryRefresh"),
+      cls: this.loading ? "mod-cta ishibashi-web-clipper-library-refresh is-loading" : "mod-cta ishibashi-web-clipper-library-refresh"
     });
+    refresh.disabled = this.loading;
+    refresh.setAttr("aria-busy", this.loading ? "true" : "false");
     refresh.addEventListener("click", async () => {
       await this.load();
     });
 
-    if (this.loading) {
+    if (this.loading && !this.hasLoaded) {
       container.createDiv({
         text: this.plugin.t("libraryLoading"),
         cls: "ishibashi-web-clipper-library-empty"
@@ -1609,6 +1614,7 @@ class WebClipLibraryView extends ItemView {
     onChange: (value: string) => void
   ) {
     const segment = container.createDiv({ cls: "ishibashi-web-clipper-library-segment" });
+    segment.style.gridTemplateColumns = `repeat(${options.length}, minmax(0, 1fr))`;
     for (const option of options) {
       const button = segment.createEl("button", {
         text: option.label,
@@ -2825,6 +2831,7 @@ const STRINGS = {
     libraryTitle: "Webクリップ管理",
     librarySubtitle: "保存済みクリップをフォルダ、ドメイン、タグで横断的に見直します。",
     libraryRefresh: "更新",
+    libraryRefreshing: "更新中...",
     libraryLoading: "Webクリップを読み込んでいます。",
     libraryBrowseBy: "分類",
     libraryByFolder: "フォルダ",
@@ -2996,6 +3003,7 @@ const STRINGS = {
     libraryTitle: "Web Clip Library",
     librarySubtitle: "Review saved clips across folders, domains, and tags.",
     libraryRefresh: "Refresh",
+    libraryRefreshing: "Refreshing...",
     libraryLoading: "Loading web clips.",
     libraryBrowseBy: "Browse by",
     libraryByFolder: "Folder",
