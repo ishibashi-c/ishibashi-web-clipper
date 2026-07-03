@@ -50,12 +50,12 @@ export const WEB_CLIP_FOLDER_PRESET = {
   folders: [
     "Web Clips/10_未整理",
     "Web Clips/20_技術",
-    "Web Clips/30_経済",
-    "Web Clips/40_エンタメ",
-    "Web Clips/50_社会",
-    "Web Clips/60_文化",
-    "Web Clips/70_大学",
-    "Web Clips/80_生活",
+    "Web Clips/30_ビジネス",
+    "Web Clips/40_社会",
+    "Web Clips/50_文化",
+    "Web Clips/60_生活",
+    "Web Clips/70_学習",
+    "Web Clips/80_ツール",
     "Web Clips/90_その他"
   ]
 };

@@ -74,12 +74,12 @@ var WEB_CLIP_FOLDER_PRESET = {
   folders: [
     "Web Clips/10_\u672A\u6574\u7406",
     "Web Clips/20_\u6280\u8853",
-    "Web Clips/30_\u7D4C\u6E08",
-    "Web Clips/40_\u30A8\u30F3\u30BF\u30E1",
-    "Web Clips/50_\u793E\u4F1A",
-    "Web Clips/60_\u6587\u5316",
-    "Web Clips/70_\u5927\u5B66",
-    "Web Clips/80_\u751F\u6D3B",
+    "Web Clips/30_\u30D3\u30B8\u30CD\u30B9",
+    "Web Clips/40_\u793E\u4F1A",
+    "Web Clips/50_\u6587\u5316",
+    "Web Clips/60_\u751F\u6D3B",
+    "Web Clips/70_\u5B66\u7FD2",
+    "Web Clips/80_\u30C4\u30FC\u30EB",
     "Web Clips/90_\u305D\u306E\u4ED6"
   ]
 };
@@ -140,7 +140,7 @@ var STRINGS = {
     settingInboxFolder: "\u6574\u7406\u5F85\u3061\u30D5\u30A9\u30EB\u30C0",
     settingInboxFolderDesc: "\u3059\u3079\u3066\u306E\u30AF\u30EA\u30C3\u30D7\u3092\u307E\u305A\u4FDD\u5B58\u3059\u308B\u30D5\u30A9\u30EB\u30C0\u3002",
     settingFolderPreset: "\u5206\u985E\u30D5\u30A9\u30EB\u30C0\u30D7\u30EA\u30BB\u30C3\u30C8",
-    settingFolderPresetDesc: "Web Clips\u914D\u4E0B\u306B 10_\u672A\u6574\u7406\u300120_\u6280\u8853\u300130_\u7D4C\u6E08... \u306E\u30D5\u30A9\u30EB\u30C0\u69CB\u6210\u3092\u4F5C\u6210\u3057\u307E\u3059\u3002\u65E2\u5B58\u30D5\u30A9\u30EB\u30C0\u306F\u4E0A\u66F8\u304D\u3057\u307E\u305B\u3093\u3002",
+    settingFolderPresetDesc: "Web Clips\u914D\u4E0B\u306B 10_\u672A\u6574\u7406\u300120_\u6280\u8853\u300130_\u30D3\u30B8\u30CD\u30B9\u300140_\u793E\u4F1A... \u306E\u30D5\u30A9\u30EB\u30C0\u69CB\u6210\u3092\u4F5C\u6210\u3057\u307E\u3059\u3002\u65E2\u5B58\u30D5\u30A9\u30EB\u30C0\u306F\u4E0A\u66F8\u304D\u3057\u307E\u305B\u3093\u3002",
     settingFolderPresetButton: "\u30D7\u30EA\u30BB\u30C3\u30C8\u3092\u4F5C\u6210",
     settingConfirm: "\u4FDD\u5B58\u524D\u306B\u78BA\u8A8D\u3059\u308B",
     settingConfirmDesc: "\u30BF\u30A4\u30C8\u30EB\u3001\u4FDD\u5B58\u5148\u3001\u30BF\u30B0\u3001\u30E1\u30E2\u3092\u4FDD\u5B58\u524D\u306B\u7DE8\u96C6\u3057\u307E\u3059\u3002",
@@ -311,7 +311,7 @@ var STRINGS = {
     settingInboxFolder: "Inbox folder",
     settingInboxFolderDesc: "Folder where all new clips are first saved.",
     settingFolderPreset: "Classification folder preset",
-    settingFolderPresetDesc: "Creates folders under Web Clips such as 10_\u672A\u6574\u7406, 20_\u6280\u8853, 30_\u7D4C\u6E08, and more. Existing folders are not overwritten.",
+    settingFolderPresetDesc: "Creates folders under Web Clips such as 10_\u672A\u6574\u7406, 20_\u6280\u8853, 30_\u30D3\u30B8\u30CD\u30B9, 40_\u793E\u4F1A, and more. Existing folders are not overwritten.",
     settingFolderPresetButton: "Create preset",
     settingConfirm: "Confirm before saving",
     settingConfirmDesc: "Edit title, folder, tags, and memo before creating a note.",
