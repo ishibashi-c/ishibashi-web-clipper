@@ -19,7 +19,7 @@
 
 .ishibashi-web-clipper-settings-guide {
   margin: -12px 0 28px;
-  padding: 16px;
+  padding: 20px 22px;
   border: 1px solid var(--background-modifier-border);
   border-radius: 8px;
   background: var(--background-primary-alt);
@@ -39,7 +39,8 @@
 .ishibashi-web-clipper-settings-guide-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 12px;
+  gap: 18px;
+  margin-bottom: 18px;
 }
 
 .ishibashi-web-clipper-settings-summary-item {
@@ -73,15 +74,20 @@
 }
 
 .ishibashi-web-clipper-subheading {
-  margin: 16px 0 8px;
+  margin: 18px 0 10px;
   font-size: 0.95em;
 }
 
 .ishibashi-web-clipper-steps {
-  margin: 0 0 14px;
-  padding-left: 1.4em;
+  margin: 0 0 18px;
+  padding-left: 1.6em;
   color: var(--text-muted);
   line-height: 1.55;
+}
+
+.ishibashi-web-clipper-steps li {
+  margin-bottom: 8px;
+  padding-left: 4px;
 }
 
 .ishibashi-web-clipper-settings-section-desc,
@@ -95,12 +101,32 @@
 .ishibashi-web-clipper-code {
   display: block;
   max-width: 100%;
+  flex: 1 1 auto;
   padding: 10px 12px;
   border: 1px solid var(--background-modifier-border);
   border-radius: 6px;
   background: var(--background-primary-alt);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.ishibashi-web-clipper-code-row {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.ishibashi-web-clipper-copy-button {
+  flex: 0 0 auto;
+  align-self: start;
+}
+
+.ishibashi-web-clipper-code-textarea {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .ishibashi-web-clipper-template {

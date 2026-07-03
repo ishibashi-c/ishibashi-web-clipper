@@ -19,9 +19,11 @@ export function mergeSettings(saved): WebClipperSettings {
     settings.inboxFolder = languagePreset.inbox;
     settings.targetFolder = languagePreset.root;
   }
-  settings.migrationTargetFolder = normalizePath(settings.migrationTargetFolder || settings.inboxFolder || DEFAULT_SETTINGS.migrationTargetFolder);
-  if (settings.migrationTargetFolder === "08_Webクリップ/10_未整理" || settings.migrationTargetFolder === "Web Clips/10_未整理") {
-    settings.migrationTargetFolder = settings.inboxFolder || DEFAULT_SETTINGS.migrationTargetFolder;
+  settings.migrationTargetFolder = normalizePath(settings.migrationTargetFolder || languagePreset.root || DEFAULT_SETTINGS.migrationTargetFolder);
+  if (settings.migrationTargetFolder === "08_Webクリップ/10_未整理"
+    || settings.migrationTargetFolder === "Web Clips/10_未整理"
+    || settings.migrationTargetFolder === languagePreset.inbox) {
+    settings.migrationTargetFolder = languagePreset.root || DEFAULT_SETTINGS.migrationTargetFolder;
   }
   settings.fetchMetadata = settings.fetchMetadata ?? settings.fetchPageTitle ?? DEFAULT_SETTINGS.fetchMetadata;
   settings.fixedTags = Array.isArray(settings.fixedTags) ? settings.fixedTags : DEFAULT_FIXED_TAGS[settings.language];

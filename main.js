@@ -35,7 +35,7 @@ var DEFAULT_SETTINGS = {
   workflowMode: "inbox",
   targetFolder: "web\u30AF\u30EA\u30C3\u30D7",
   inboxFolder: "web\u30AF\u30EA\u30C3\u30D7/10_\u672A\u6574\u7406",
-  migrationTargetFolder: "web\u30AF\u30EA\u30C3\u30D7/10_\u672A\u6574\u7406",
+  migrationTargetFolder: "web\u30AF\u30EA\u30C3\u30D7",
   dateFormat: "YYYY-MM-DD HH:mm",
   noteTemplate: [
     "## Link",
@@ -142,11 +142,13 @@ var STRINGS = {
     captureGuideDesktopTitle: "\u30D1\u30BD\u30B3\u30F3\u30D6\u30E9\u30A6\u30B6",
     captureGuideDesktopDesc: "\u4E0B\u306EJavaScript\u30B3\u30FC\u30C9\u3092\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u306EURL\u6B04\u306B\u767B\u9332\u3057\u3001\u4FDD\u5B58\u3057\u305F\u3044\u30DA\u30FC\u30B8\u4E0A\u3067\u5B9F\u884C\u3057\u307E\u3059\u3002",
     bookmarkletStepsTitle: "\u8A2D\u5B9A\u624B\u9806",
-    bookmarkletStep1: "1. \u30D6\u30E9\u30A6\u30B6\u306E\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u30D0\u30FC\u3092\u8868\u793A\u3057\u307E\u3059\u3002",
-    bookmarkletStep2: "2. \u4EFB\u610F\u306EWeb\u30DA\u30FC\u30B8\u3092\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u3059\u308B\u304B\u3001\u65B0\u3057\u3044\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u3092\u8FFD\u52A0\u3057\u307E\u3059\u3002",
-    bookmarkletStep3: "3. \u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u306E\u7DE8\u96C6\u753B\u9762\u3092\u958B\u304D\u3001\u540D\u524D\u3092\u5206\u304B\u308A\u3084\u3059\u304F\u5909\u66F4\u3057\u307E\u3059\u3002",
-    bookmarkletStep4: "4. URL\u6B04\u306B\u4E0B\u306EJavaScript\u30B3\u30FC\u30C9\u3092\u8CBC\u308A\u4ED8\u3051\u3066\u4FDD\u5B58\u3057\u307E\u3059\u3002",
+    bookmarkletStep1: "\u30D6\u30E9\u30A6\u30B6\u306E\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u30D0\u30FC\u3092\u8868\u793A\u3057\u307E\u3059\u3002",
+    bookmarkletStep2: "\u4EFB\u610F\u306EWeb\u30DA\u30FC\u30B8\u3092\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u3059\u308B\u304B\u3001\u65B0\u3057\u3044\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u3092\u8FFD\u52A0\u3057\u307E\u3059\u3002",
+    bookmarkletStep3: "\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u306E\u7DE8\u96C6\u753B\u9762\u3092\u958B\u304D\u3001\u540D\u524D\u3092\u5206\u304B\u308A\u3084\u3059\u304F\u5909\u66F4\u3057\u307E\u3059\u3002",
+    bookmarkletStep4: "URL\u6B04\u306B\u4E0B\u306EJavaScript\u30B3\u30FC\u30C9\u3092\u8CBC\u308A\u4ED8\u3051\u3066\u4FDD\u5B58\u3057\u307E\u3059\u3002",
     bookmarkletCodeLabel: "\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u306EURL\u6B04\u306B\u8CBC\u308A\u4ED8\u3051\u308B\u30B3\u30FC\u30C9",
+    bookmarkletCopy: "\u30B3\u30FC\u30C9\u3092\u30B3\u30D4\u30FC",
+    bookmarkletCopied: "\u30B3\u30D4\u30FC\u3057\u307E\u3057\u305F",
     settingConfirm: "\u4FDD\u5B58\u524D\u306B\u78BA\u8A8D\u3059\u308B",
     settingConfirmDesc: "\u30BF\u30A4\u30C8\u30EB\u3001\u4FDD\u5B58\u5148\u3001\u30BF\u30B0\u3001\u30E1\u30E2\u3092\u4FDD\u5B58\u524D\u306B\u7DE8\u96C6\u3057\u307E\u3059\u3002",
     settingOpenAfterClip: "\u4FDD\u5B58\u5F8C\u306B\u30CE\u30FC\u30C8\u3092\u958B\u304F",
@@ -324,11 +326,13 @@ var STRINGS = {
     captureGuideDesktopTitle: "Desktop browser",
     captureGuideDesktopDesc: "Paste the JavaScript code below into a bookmark URL, then run it on the page you want to save.",
     bookmarkletStepsTitle: "Setup steps",
-    bookmarkletStep1: "1. Show your browser bookmarks bar.",
-    bookmarkletStep2: "2. Bookmark any web page, or add a new bookmark.",
-    bookmarkletStep3: "3. Open the bookmark edit screen and give it a clear name.",
-    bookmarkletStep4: "4. Paste the JavaScript code below into the URL field and save it.",
+    bookmarkletStep1: "Show your browser bookmarks bar.",
+    bookmarkletStep2: "Bookmark any web page, or add a new bookmark.",
+    bookmarkletStep3: "Open the bookmark edit screen and give it a clear name.",
+    bookmarkletStep4: "Paste the JavaScript code below into the URL field and save it.",
     bookmarkletCodeLabel: "Code to paste into the bookmark URL field",
+    bookmarkletCopy: "Copy code",
+    bookmarkletCopied: "Copied",
     settingConfirm: "Confirm before saving",
     settingConfirmDesc: "Edit title, folder, tags, and memo before creating a note.",
     settingOpenAfterClip: "Open note after saving",
@@ -762,9 +766,9 @@ function mergeSettings(saved) {
     settings.inboxFolder = languagePreset.inbox;
     settings.targetFolder = languagePreset.root;
   }
-  settings.migrationTargetFolder = normalizePath(settings.migrationTargetFolder || settings.inboxFolder || DEFAULT_SETTINGS.migrationTargetFolder);
-  if (settings.migrationTargetFolder === "08_Web\u30AF\u30EA\u30C3\u30D7/10_\u672A\u6574\u7406" || settings.migrationTargetFolder === "Web Clips/10_\u672A\u6574\u7406") {
-    settings.migrationTargetFolder = settings.inboxFolder || DEFAULT_SETTINGS.migrationTargetFolder;
+  settings.migrationTargetFolder = normalizePath(settings.migrationTargetFolder || languagePreset.root || DEFAULT_SETTINGS.migrationTargetFolder);
+  if (settings.migrationTargetFolder === "08_Web\u30AF\u30EA\u30C3\u30D7/10_\u672A\u6574\u7406" || settings.migrationTargetFolder === "Web Clips/10_\u672A\u6574\u7406" || settings.migrationTargetFolder === languagePreset.inbox) {
+    settings.migrationTargetFolder = languagePreset.root || DEFAULT_SETTINGS.migrationTargetFolder;
   }
   settings.fetchMetadata = settings.fetchMetadata ?? settings.fetchPageTitle ?? DEFAULT_SETTINGS.fetchMetadata;
   settings.fixedTags = Array.isArray(settings.fixedTags) ? settings.fixedTags : DEFAULT_FIXED_TAGS[settings.language];
@@ -943,6 +947,9 @@ var IshibashiWebClipper = class extends import_obsidian2.Plugin {
   getDefaultTargetFolder() {
     return normalizePath(this.settings.inboxFolder || DEFAULT_SETTINGS.inboxFolder);
   }
+  getDefaultMigrationFolder() {
+    return normalizePath(this.settings.migrationTargetFolder || this.getFolderPreset().root);
+  }
   getDefaultFixedTags(language = this.settings.language) {
     return DEFAULT_FIXED_TAGS[language].slice();
   }
@@ -964,7 +971,7 @@ var IshibashiWebClipper = class extends import_obsidian2.Plugin {
     this.settings.workflowMode = "inbox";
     this.settings.inboxFolder = preset.inbox;
     this.settings.targetFolder = preset.root;
-    this.settings.migrationTargetFolder = preset.inbox;
+    this.settings.migrationTargetFolder = preset.root;
     await this.saveSettings();
   }
   async resolveMetadata(url, sharedTitle) {
@@ -1327,7 +1334,7 @@ var FirstRunModal = class extends import_obsidian2.Modal {
         } else {
           this.plugin.settings.inboxFolder = preset.inbox;
           this.plugin.settings.targetFolder = preset.root;
-          this.plugin.settings.migrationTargetFolder = preset.inbox;
+          this.plugin.settings.migrationTargetFolder = preset.root;
         }
         this.plugin.settings.confirmBeforeSave = false;
         this.plugin.settings.fixedTags = this.plugin.getDefaultFixedTags(this.language);
@@ -2392,7 +2399,7 @@ var WebClipMigrationModal = class extends import_obsidian2.Modal {
   constructor(app, plugin) {
     super(app);
     this.plugin = plugin;
-    this.folder = plugin.settings.migrationTargetFolder || plugin.getDefaultTargetFolder();
+    this.folder = plugin.getDefaultMigrationFolder();
     this.items = [];
     this.scanned = false;
     this.applying = false;
@@ -2641,8 +2648,8 @@ var IshibashiWebClipperSettingTab = class extends import_obsidian2.PluginSetting
       });
     });
     new import_obsidian2.Setting(maintenanceSection).setName(this.plugin.t("settingMigrationFolder")).setDesc(this.plugin.t("settingMigrationFolderDesc")).addText((text) => {
-      text.setPlaceholder(this.plugin.getDefaultTargetFolder()).setValue(this.plugin.settings.migrationTargetFolder || this.plugin.getDefaultTargetFolder()).onChange(async (value) => {
-        this.plugin.settings.migrationTargetFolder = normalizePath(value) || this.plugin.getDefaultTargetFolder();
+      text.setPlaceholder(this.plugin.getFolderPreset().root).setValue(this.plugin.getDefaultMigrationFolder()).onChange(async (value) => {
+        this.plugin.settings.migrationTargetFolder = normalizePath(value) || this.plugin.getFolderPreset().root;
         await this.plugin.saveSettings();
       });
     });
@@ -2709,10 +2716,25 @@ var IshibashiWebClipperSettingTab = class extends import_obsidian2.PluginSetting
       text: this.plugin.t("bookmarkletCodeLabel"),
       cls: "ishibashi-web-clipper-section-note"
     });
-    guide.createEl("code", {
-      text: this.getBookmarkletCode(),
+    const codeRow = guide.createDiv({ cls: "ishibashi-web-clipper-code-row" });
+    const code = this.getBookmarkletCode();
+    codeRow.createEl("code", {
+      text: code,
       cls: "ishibashi-web-clipper-code"
     });
+    const copy = codeRow.createEl("button", {
+      text: this.plugin.t("bookmarkletCopy"),
+      cls: "ishibashi-web-clipper-copy-button"
+    });
+    copy.addEventListener("click", async () => {
+      await navigator.clipboard.writeText(code);
+      new import_obsidian2.Notice(this.plugin.t("bookmarkletCopied"));
+    });
+    const plain = guide.createEl("textarea", {
+      text: this.getBookmarkletCode(),
+      cls: "ishibashi-web-clipper-code-textarea"
+    });
+    plain.readOnly = true;
   }
   refreshSummary() {
     const summary = this.containerEl.querySelector(".ishibashi-web-clipper-settings-summary");

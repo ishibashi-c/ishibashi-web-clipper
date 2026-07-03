@@ -9,7 +9,7 @@ export const DEFAULT_SETTINGS = {
   workflowMode: "inbox",
   targetFolder: "webクリップ",
   inboxFolder: "webクリップ/10_未整理",
-  migrationTargetFolder: "webクリップ/10_未整理",
+  migrationTargetFolder: "webクリップ",
   dateFormat: "YYYY-MM-DD HH:mm",
   noteTemplate: [
     "## Link",
