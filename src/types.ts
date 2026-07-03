@@ -35,6 +35,7 @@ export interface WebClipperSettings {
   targetFolder: string;
   inboxFolder: string;
   migrationTargetFolder: string;
+  browserVaultName: string;
   dateFormat: string;
   noteTemplate: string;
   fetchMetadata: boolean;

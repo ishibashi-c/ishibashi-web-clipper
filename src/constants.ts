@@ -10,6 +10,7 @@ export const DEFAULT_SETTINGS = {
   targetFolder: "webクリップ",
   inboxFolder: "webクリップ/10_未整理",
   migrationTargetFolder: "webクリップ",
+  browserVaultName: "",
   dateFormat: "YYYY-MM-DD HH:mm",
   noteTemplate: [
     "## Link",

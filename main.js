@@ -36,6 +36,7 @@ var DEFAULT_SETTINGS = {
   targetFolder: "web\u30AF\u30EA\u30C3\u30D7",
   inboxFolder: "web\u30AF\u30EA\u30C3\u30D7/10_\u672A\u6574\u7406",
   migrationTargetFolder: "web\u30AF\u30EA\u30C3\u30D7",
+  browserVaultName: "",
   dateFormat: "YYYY-MM-DD HH:mm",
   noteTemplate: [
     "## Link",
@@ -133,6 +134,8 @@ var STRINGS = {
     workflowInbox: "\u4E00\u65E6Inbox/\u672A\u6574\u7406\u306B\u4FDD\u5B58\u3057\u3066\u5F8C\u3067\u6574\u7406\u3059\u308B",
     settingInboxFolder: "\u6574\u7406\u5F85\u3061\u30D5\u30A9\u30EB\u30C0",
     settingInboxFolderDesc: "\u3059\u3079\u3066\u306E\u30AF\u30EA\u30C3\u30D7\u3092\u307E\u305A\u4FDD\u5B58\u3059\u308B\u30D5\u30A9\u30EB\u30C0\u3002",
+    settingBrowserVaultName: "\u30D6\u30E9\u30A6\u30B6\u4FDD\u5B58\u5148Vault\u540D",
+    settingBrowserVaultNameDesc: "PC\u30D6\u30E9\u30A6\u30B6\u306E\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u30EC\u30C3\u30C8\u304B\u3089\u4FDD\u5B58\u3059\u308BVault\u540D\u3002\u8907\u6570Vault\u3092\u4F7F\u3046\u5834\u5408\u306F\u5FC5\u305A\u6307\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002",
     settingFolderPreset: "\u5206\u985E\u30D5\u30A9\u30EB\u30C0\u30D7\u30EA\u30BB\u30C3\u30C8",
     settingFolderPresetDesc: "web\u30AF\u30EA\u30C3\u30D7\u914D\u4E0B\u306B 10_\u672A\u6574\u7406\u300120_\u6280\u8853\u300130_\u30D3\u30B8\u30CD\u30B9\u300140_\u793E\u4F1A... \u306E\u30D5\u30A9\u30EB\u30C0\u69CB\u6210\u3092\u4F5C\u6210\u3057\u307E\u3059\u3002\u65E2\u5B58\u30D5\u30A9\u30EB\u30C0\u306F\u4E0A\u66F8\u304D\u3057\u307E\u305B\u3093\u3002",
     settingFolderPresetButton: "\u30D7\u30EA\u30BB\u30C3\u30C8\u3092\u4F5C\u6210",
@@ -140,7 +143,7 @@ var STRINGS = {
     captureGuideMobileTitle: "\u30B9\u30DE\u30DB\u30D6\u30E9\u30A6\u30B6",
     captureGuideMobileDesc: "\u30D6\u30E9\u30A6\u30B6\u3084\u30A2\u30D7\u30EA\u306E\u5171\u6709\u30E1\u30CB\u30E5\u30FC\u304B\u3089Obsidian\u3078\u5171\u6709\u3057\u3001\u30A6\u30A7\u30D6\u30AF\u30EA\u30C3\u30D7\u306B\u4FDD\u5B58\u3092\u9078\u3073\u307E\u3059\u3002",
     captureGuideDesktopTitle: "\u30D1\u30BD\u30B3\u30F3\u30D6\u30E9\u30A6\u30B6",
-    captureGuideDesktopDesc: "\u4E0B\u306EJavaScript\u30B3\u30FC\u30C9\u3092\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u306EURL\u6B04\u306B\u767B\u9332\u3057\u3001\u4FDD\u5B58\u3057\u305F\u3044\u30DA\u30FC\u30B8\u4E0A\u3067\u5B9F\u884C\u3057\u307E\u3059\u3002",
+    captureGuideDesktopDesc: "\u4E0B\u306EJavaScript\u30B3\u30FC\u30C9\u3092\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u306EURL\u6B04\u306B\u767B\u9332\u3057\u3001\u4FDD\u5B58\u3057\u305F\u3044\u30DA\u30FC\u30B8\u4E0A\u3067\u5B9F\u884C\u3057\u307E\u3059\u3002\u30B3\u30FC\u30C9\u306B\u306F\u4FDD\u5B58\u5148Vault\u540D\u304C\u542B\u307E\u308C\u307E\u3059\u3002",
     bookmarkletStepsTitle: "\u8A2D\u5B9A\u624B\u9806",
     bookmarkletStep1: "\u30D6\u30E9\u30A6\u30B6\u306E\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u30D0\u30FC\u3092\u8868\u793A\u3057\u307E\u3059\u3002",
     bookmarkletStep2: "\u4EFB\u610F\u306EWeb\u30DA\u30FC\u30B8\u3092\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u3059\u308B\u304B\u3001\u65B0\u3057\u3044\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u3092\u8FFD\u52A0\u3057\u307E\u3059\u3002",
@@ -317,6 +320,8 @@ var STRINGS = {
     workflowInbox: "Save to Inbox first and organize later",
     settingInboxFolder: "Inbox folder",
     settingInboxFolderDesc: "Folder where all new clips are first saved.",
+    settingBrowserVaultName: "Browser target vault name",
+    settingBrowserVaultNameDesc: "Vault name used by the desktop browser bookmarklet. Set this when you use multiple vaults.",
     settingFolderPreset: "Classification folder preset",
     settingFolderPresetDesc: "Creates folders under webclip such as 10_Inbox, 20_Tech, 30_Business, 40_Society, and more. Existing folders are not overwritten.",
     settingFolderPresetButton: "Create preset",
@@ -324,7 +329,7 @@ var STRINGS = {
     captureGuideMobileTitle: "Mobile browser",
     captureGuideMobileDesc: "Use the browser or app share menu, share to Obsidian, then choose Save to Web Clips.",
     captureGuideDesktopTitle: "Desktop browser",
-    captureGuideDesktopDesc: "Paste the JavaScript code below into a bookmark URL, then run it on the page you want to save.",
+    captureGuideDesktopDesc: "Paste the JavaScript code below into a bookmark URL, then run it on the page you want to save. The code includes the target vault name.",
     bookmarkletStepsTitle: "Setup steps",
     bookmarkletStep1: "Show your browser bookmarks bar.",
     bookmarkletStep2: "Bookmark any web page, or add a new bookmark.",
@@ -770,6 +775,7 @@ function mergeSettings(saved) {
   if (settings.migrationTargetFolder === "08_Web\u30AF\u30EA\u30C3\u30D7/10_\u672A\u6574\u7406" || settings.migrationTargetFolder === "Web Clips/10_\u672A\u6574\u7406" || settings.migrationTargetFolder === languagePreset.inbox) {
     settings.migrationTargetFolder = languagePreset.root || DEFAULT_SETTINGS.migrationTargetFolder;
   }
+  settings.browserVaultName = String(settings.browserVaultName || "");
   settings.fetchMetadata = settings.fetchMetadata ?? settings.fetchPageTitle ?? DEFAULT_SETTINGS.fetchMetadata;
   settings.fixedTags = Array.isArray(settings.fixedTags) ? settings.fixedTags : DEFAULT_FIXED_TAGS[settings.language];
   if (settings.fixedTags.length === 1 && settings.fixedTags[0] === "webclip" && settings.language === "ja") {
@@ -794,6 +800,10 @@ var IshibashiWebClipper = class extends import_obsidian2.Plugin {
   }
   async onload() {
     this.settings = mergeSettings(await this.loadData());
+    if (!this.settings.browserVaultName) {
+      this.settings.browserVaultName = this.getVaultName();
+      await this.saveSettings();
+    }
     this.registerObsidianProtocolHandler(PROTOCOL_ACTION, async (params) => {
       await this.captureFromParams(params);
     });
@@ -868,6 +878,9 @@ var IshibashiWebClipper = class extends import_obsidian2.Plugin {
   }
   t(key) {
     return translate(this.settings.language, key);
+  }
+  getVaultName() {
+    return this.app.vault.getName?.() || "";
   }
   async captureFromParams(params) {
     const sharedText = firstValue(params.text);
@@ -2498,6 +2511,8 @@ var WebClipMigrationModal = class extends import_obsidian2.Modal {
 var IshibashiWebClipperSettingTab = class extends import_obsidian2.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
+    this.bookmarkletCodeEl = null;
+    this.bookmarkletPlainEl = null;
     this.plugin = plugin;
   }
   display() {
@@ -2540,6 +2555,13 @@ var IshibashiWebClipperSettingTab = class extends import_obsidian2.PluginSetting
         this.plugin.settings.migrationTargetFolder = this.plugin.settings.migrationTargetFolder || folder;
         await this.plugin.saveSettings();
         this.refreshSummary();
+      });
+    });
+    new import_obsidian2.Setting(destinationSection).setName(this.plugin.t("settingBrowserVaultName")).setDesc(this.plugin.t("settingBrowserVaultNameDesc")).addText((text) => {
+      text.setPlaceholder(this.plugin.getVaultName()).setValue(this.plugin.settings.browserVaultName || this.plugin.getVaultName()).onChange(async (value) => {
+        this.plugin.settings.browserVaultName = value.trim();
+        await this.plugin.saveSettings();
+        this.refreshBookmarkletCode();
       });
     });
     new import_obsidian2.Setting(destinationSection).setName(this.plugin.t("settingFolderPreset")).setDesc(this.plugin.t("settingFolderPresetDesc")).addButton((button) => {
@@ -2718,7 +2740,7 @@ var IshibashiWebClipperSettingTab = class extends import_obsidian2.PluginSetting
     });
     const codeRow = guide.createDiv({ cls: "ishibashi-web-clipper-code-row" });
     const code = this.getBookmarkletCode();
-    codeRow.createEl("code", {
+    this.bookmarkletCodeEl = codeRow.createEl("code", {
       text: code,
       cls: "ishibashi-web-clipper-code"
     });
@@ -2727,14 +2749,14 @@ var IshibashiWebClipperSettingTab = class extends import_obsidian2.PluginSetting
       cls: "ishibashi-web-clipper-copy-button"
     });
     copy.addEventListener("click", async () => {
-      await navigator.clipboard.writeText(code);
+      await navigator.clipboard.writeText(this.getBookmarkletCode());
       new import_obsidian2.Notice(this.plugin.t("bookmarkletCopied"));
     });
-    const plain = guide.createEl("textarea", {
+    this.bookmarkletPlainEl = guide.createEl("textarea", {
       text: this.getBookmarkletCode(),
       cls: "ishibashi-web-clipper-code-textarea"
     });
-    plain.readOnly = true;
+    this.bookmarkletPlainEl.readOnly = true;
   }
   refreshSummary() {
     const summary = this.containerEl.querySelector(".ishibashi-web-clipper-settings-summary");
@@ -2774,8 +2796,15 @@ var IshibashiWebClipperSettingTab = class extends import_obsidian2.PluginSetting
       cls: "ishibashi-web-clipper-settings-summary-value"
     });
   }
+  refreshBookmarkletCode() {
+    const code = this.getBookmarkletCode();
+    if (this.bookmarkletCodeEl) this.bookmarkletCodeEl.setText(code);
+    if (this.bookmarkletPlainEl) this.bookmarkletPlainEl.value = code;
+  }
   getBookmarkletCode() {
-    return `javascript:(()=>{const e=encodeURIComponent;const url=location.href;const title=document.title||"";const selection=window.getSelection?String(window.getSelection()).trim():"";let target=\`obsidian://${PROTOCOL_ACTION}?url=${"${e(url)}"}&title=${"${e(title)}"}\`;if(selection)target+=\`&note=${"${e(selection.slice(0,1500))}"}\`;location.href=target;})();`;
+    const vault = (this.plugin.settings.browserVaultName || this.plugin.getVaultName()).trim();
+    const vaultPart = vault ? `vault=${encodeURIComponent(vault)}&` : "";
+    return `javascript:(()=>{const e=encodeURIComponent;const url=location.href;const title=document.title||"";const selection=window.getSelection?String(window.getSelection()).trim():"";let target=\`obsidian://${PROTOCOL_ACTION}?${vaultPart}url=${"${e(url)}"}&title=${"${e(title)}"}\`;if(selection)target+=\`&note=${"${e(selection.slice(0,1500))}"}\`;location.href=target;})();`;
   }
   getDestinationSummary() {
     return this.plugin.settings.inboxFolder || DEFAULT_SETTINGS.inboxFolder;

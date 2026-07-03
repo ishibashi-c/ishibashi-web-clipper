@@ -85,6 +85,10 @@ export default class IshibashiWebClipper extends Plugin {
 
   async onload() {
     this.settings = mergeSettings(await this.loadData());
+    if (!this.settings.browserVaultName) {
+      this.settings.browserVaultName = this.getVaultName();
+      await this.saveSettings();
+    }
 
     this.registerObsidianProtocolHandler(PROTOCOL_ACTION, async (params) => {
       await this.captureFromParams(params);
@@ -178,6 +182,10 @@ export default class IshibashiWebClipper extends Plugin {
 
   t(key: string) {
     return translate(this.settings.language, key);
+  }
+
+  getVaultName(): string {
+    return (this.app.vault as any).getName?.() || "";
   }
 
   async captureFromParams(params) {
@@ -2387,6 +2395,8 @@ class WebClipMigrationModal extends Modal {
 
 class IshibashiWebClipperSettingTab extends PluginSettingTab {
   plugin: IshibashiWebClipper;
+  bookmarkletCodeEl: HTMLElement | null = null;
+  bookmarkletPlainEl: HTMLTextAreaElement | null = null;
 
   constructor(app: any, plugin: IshibashiWebClipper) {
     super(app, plugin);
@@ -2451,6 +2461,20 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
             this.plugin.settings.migrationTargetFolder = this.plugin.settings.migrationTargetFolder || folder;
             await this.plugin.saveSettings();
             this.refreshSummary();
+          });
+      });
+
+    new Setting(destinationSection)
+      .setName(this.plugin.t("settingBrowserVaultName"))
+      .setDesc(this.plugin.t("settingBrowserVaultNameDesc"))
+      .addText((text) => {
+        text
+          .setPlaceholder(this.plugin.getVaultName())
+          .setValue(this.plugin.settings.browserVaultName || this.plugin.getVaultName())
+          .onChange(async (value) => {
+            this.plugin.settings.browserVaultName = value.trim();
+            await this.plugin.saveSettings();
+            this.refreshBookmarkletCode();
           });
       });
 
@@ -2706,7 +2730,7 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
     });
     const codeRow = guide.createDiv({ cls: "ishibashi-web-clipper-code-row" });
     const code = this.getBookmarkletCode();
-    codeRow.createEl("code", {
+    this.bookmarkletCodeEl = codeRow.createEl("code", {
       text: code,
       cls: "ishibashi-web-clipper-code"
     });
@@ -2715,14 +2739,14 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
       cls: "ishibashi-web-clipper-copy-button"
     });
     copy.addEventListener("click", async () => {
-      await navigator.clipboard.writeText(code);
+      await navigator.clipboard.writeText(this.getBookmarkletCode());
       new Notice(this.plugin.t("bookmarkletCopied"));
     });
-    const plain = guide.createEl("textarea", {
+    this.bookmarkletPlainEl = guide.createEl("textarea", {
       text: this.getBookmarkletCode(),
       cls: "ishibashi-web-clipper-code-textarea"
     });
-    plain.readOnly = true;
+    this.bookmarkletPlainEl.readOnly = true;
   }
 
   refreshSummary() {
@@ -2766,8 +2790,16 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
     });
   }
 
+  refreshBookmarkletCode() {
+    const code = this.getBookmarkletCode();
+    if (this.bookmarkletCodeEl) this.bookmarkletCodeEl.setText(code);
+    if (this.bookmarkletPlainEl) this.bookmarkletPlainEl.value = code;
+  }
+
   getBookmarkletCode(): string {
-    return `javascript:(()=>{const e=encodeURIComponent;const url=location.href;const title=document.title||"";const selection=window.getSelection?String(window.getSelection()).trim():"";let target=\`obsidian://${PROTOCOL_ACTION}?url=${"${e(url)}"}&title=${"${e(title)}"}\`;if(selection)target+=\`&note=${"${e(selection.slice(0,1500))}"}\`;location.href=target;})();`;
+    const vault = (this.plugin.settings.browserVaultName || this.plugin.getVaultName()).trim();
+    const vaultPart = vault ? `vault=${encodeURIComponent(vault)}&` : "";
+    return `javascript:(()=>{const e=encodeURIComponent;const url=location.href;const title=document.title||"";const selection=window.getSelection?String(window.getSelection()).trim():"";let target=\`obsidian://${PROTOCOL_ACTION}?${vaultPart}url=${"${e(url)}"}&title=${"${e(title)}"}\`;if(selection)target+=\`&note=${"${e(selection.slice(0,1500))}"}\`;location.href=target;})();`;
   }
 
   getDestinationSummary(): string {
