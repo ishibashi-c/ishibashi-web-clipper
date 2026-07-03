@@ -281,14 +281,10 @@ export function normalizeGridColumns(value): number {
 }
 
 export function tagsFromFolderPath(path) {
-  const mappings = {
-    "08_Webクリップ": "Webクリップ"
-  };
-
   return normalizePath(path)
     .split("/")
     .filter(Boolean)
-    .map((part) => mappings[part] || part.replace(/^\d{2}_/, ""))
+    .map((part) => part.replace(/^\d{2}_/, ""))
     .map(normalizeTag)
     .filter(Boolean)
     .filter((tag, index, tags) => tags.indexOf(tag) === index);

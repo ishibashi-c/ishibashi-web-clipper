@@ -12,10 +12,12 @@ import {
 
 import {
   DEFAULT_SETTINGS,
+  DEFAULT_FIXED_TAGS,
   LEGACY_PROTOCOL_ACTION,
   PROTOCOL_ACTION,
   VIEW_TYPE_CLIP_HISTORY,
-  VIEW_TYPE_CLIP_LIBRARY
+  VIEW_TYPE_CLIP_LIBRARY,
+  WEB_CLIP_FOLDER_PRESET
 } from "./constants";
 import { translate } from "./i18n";
 import { mergeSettings } from "./settings";
@@ -275,10 +277,31 @@ export default class IshibashiWebClipper extends Plugin {
   }
 
   getDefaultTargetFolder(): string {
-    if (this.settings.workflowMode === "inbox") {
-      return normalizePath(this.settings.inboxFolder || DEFAULT_SETTINGS.inboxFolder);
+    return normalizePath(this.settings.inboxFolder || DEFAULT_SETTINGS.inboxFolder);
+  }
+
+  getDefaultFixedTags(language: "ja" | "en" = this.settings.language): string[] {
+    return DEFAULT_FIXED_TAGS[language].slice();
+  }
+
+  isLanguageDefaultFixedTags(tags: string[]): boolean {
+    const normalized = tags.map(normalizeTag).filter(Boolean);
+    return Object.values(DEFAULT_FIXED_TAGS).some((defaults) => {
+      const defaultTags = defaults.map(normalizeTag).filter(Boolean);
+      return normalized.length === defaultTags.length
+        && normalized.every((tag, index) => tag === defaultTags[index]);
+    });
+  }
+
+  async applyFolderPreset() {
+    for (const folder of WEB_CLIP_FOLDER_PRESET.folders) {
+      await this.ensureFolder(folder);
     }
-    return normalizePath(this.settings.targetFolder || DEFAULT_SETTINGS.targetFolder);
+    this.settings.workflowMode = "inbox";
+    this.settings.inboxFolder = WEB_CLIP_FOLDER_PRESET.inbox;
+    this.settings.targetFolder = WEB_CLIP_FOLDER_PRESET.root;
+    this.settings.migrationTargetFolder = WEB_CLIP_FOLDER_PRESET.inbox;
+    await this.saveSettings();
   }
 
   async resolveMetadata(url: string, sharedTitle: string): Promise<WebClipMetadata> {
@@ -677,13 +700,11 @@ export default class IshibashiWebClipper extends Plugin {
 class FirstRunModal extends Modal {
   plugin: IshibashiWebClipper;
   language: "ja" | "en";
-  workflowMode: "inbox" | "direct";
 
   constructor(app: any, plugin: IshibashiWebClipper) {
     super(app);
     this.plugin = plugin;
     this.language = plugin.settings.language || "ja";
-    this.workflowMode = plugin.settings.workflowMode || "inbox";
   }
 
   onOpen() {
@@ -710,35 +731,17 @@ class FirstRunModal extends Modal {
       });
 
     new Setting(contentEl)
-      .setName(translate(this.language, "settingWorkflow"))
-      .setDesc(translate(this.language, "settingWorkflowDesc"))
-      .addDropdown((dropdown) => {
-        dropdown
-          .addOption("inbox", translate(this.language, "workflowInbox"))
-          .addOption("direct", translate(this.language, "workflowDirect"))
-          .setValue(this.workflowMode)
-          .onChange((value: "inbox" | "direct") => {
-            this.workflowMode = value;
-          });
-      });
-
-    new Setting(contentEl)
       .addButton((button) => {
         button
           .setCta()
           .setButtonText(translate(this.language, "firstRunStart"))
           .onClick(async () => {
             this.plugin.settings.language = this.language;
-            this.plugin.settings.workflowMode = this.workflowMode;
-            if (this.workflowMode === "inbox") {
-              this.plugin.settings.inboxFolder = this.language === "ja"
-                ? "08_Webクリップ/10_未整理"
-                : "Web Clips/Inbox";
-              this.plugin.settings.confirmBeforeSave = false;
-            } else {
-              this.plugin.settings.targetFolder = "Web Clips";
-              this.plugin.settings.confirmBeforeSave = true;
-            }
+            this.plugin.settings.workflowMode = "inbox";
+            this.plugin.settings.inboxFolder = DEFAULT_SETTINGS.inboxFolder;
+            this.plugin.settings.migrationTargetFolder = DEFAULT_SETTINGS.migrationTargetFolder;
+            this.plugin.settings.confirmBeforeSave = false;
+            this.plugin.settings.fixedTags = this.plugin.getDefaultFixedTags(this.language);
             this.plugin.settings.setupCompleted = true;
             await this.plugin.saveSettings();
             this.close();
@@ -2389,24 +2392,13 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
           .addOption("en", "English")
           .setValue(this.plugin.settings.language)
           .onChange(async (value: "ja" | "en") => {
+            const shouldUpdateFixedTags = this.plugin.isLanguageDefaultFixedTags(this.plugin.settings.fixedTags || []);
             this.plugin.settings.language = value;
+            if (shouldUpdateFixedTags) {
+              this.plugin.settings.fixedTags = this.plugin.getDefaultFixedTags(value);
+            }
             await this.plugin.saveSettings();
             this.plugin.updateRibbonLabel();
-            this.display();
-          });
-      });
-
-    new Setting(startSection)
-      .setName(this.plugin.t("settingWorkflow"))
-      .setDesc(this.plugin.t("settingWorkflowDesc"))
-      .addDropdown((dropdown) => {
-        dropdown
-          .addOption("inbox", this.plugin.t("workflowInbox"))
-          .addOption("direct", this.plugin.t("workflowDirect"))
-          .setValue(this.plugin.settings.workflowMode)
-          .onChange(async (value: "inbox" | "direct") => {
-            this.plugin.settings.workflowMode = value;
-            await this.plugin.saveSettings();
             this.display();
           });
       });
@@ -2417,32 +2409,32 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
       this.plugin.t("sectionDestinationDesc")
     );
 
-    if (this.plugin.settings.workflowMode === "inbox") {
-      new Setting(destinationSection)
-        .setName(this.plugin.t("settingInboxFolder"))
-        .setDesc(this.plugin.t("settingInboxFolderDesc"))
-        .addText((text) => {
-          text
-            .setPlaceholder("08_Webクリップ/10_未整理")
-            .setValue(this.plugin.settings.inboxFolder || DEFAULT_SETTINGS.inboxFolder)
-            .onChange(async (value) => {
-              this.plugin.settings.inboxFolder = normalizePath(value) || DEFAULT_SETTINGS.inboxFolder;
-              await this.plugin.saveSettings();
-            });
-        });
-
-    }
-
     new Setting(destinationSection)
-      .setName(this.plugin.t("settingTargetFolder"))
-      .setDesc(this.plugin.t("settingTargetFolderDesc"))
+      .setName(this.plugin.t("settingInboxFolder"))
+      .setDesc(this.plugin.t("settingInboxFolderDesc"))
       .addText((text) => {
         text
-          .setPlaceholder("Web Clips")
-          .setValue(this.plugin.settings.targetFolder || DEFAULT_SETTINGS.targetFolder)
+          .setPlaceholder(DEFAULT_SETTINGS.inboxFolder)
+          .setValue(this.plugin.settings.inboxFolder || DEFAULT_SETTINGS.inboxFolder)
           .onChange(async (value) => {
-            this.plugin.settings.targetFolder = normalizePath(value) || DEFAULT_SETTINGS.targetFolder;
+            const folder = normalizePath(value) || DEFAULT_SETTINGS.inboxFolder;
+            this.plugin.settings.inboxFolder = folder;
+            this.plugin.settings.migrationTargetFolder = this.plugin.settings.migrationTargetFolder || folder;
             await this.plugin.saveSettings();
+            this.refreshSummary();
+          });
+      });
+
+    new Setting(destinationSection)
+      .setName(this.plugin.t("settingFolderPreset"))
+      .setDesc(this.plugin.t("settingFolderPresetDesc"))
+      .addButton((button) => {
+        button
+          .setButtonText(this.plugin.t("settingFolderPresetButton"))
+          .onClick(async () => {
+            await this.plugin.applyFolderPreset();
+            new Notice(this.plugin.t("noticeFolderPresetApplied"));
+            this.display();
           });
       });
 
@@ -2457,8 +2449,8 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
       .setDesc(this.plugin.t("settingFixedTagsDesc"))
       .addTextArea((text) => {
         text
-          .setPlaceholder("webclip")
-          .setValue((this.plugin.settings.fixedTags || DEFAULT_SETTINGS.fixedTags).join("\n"))
+          .setPlaceholder(this.plugin.getDefaultFixedTags().join("\n"))
+          .setValue((this.plugin.settings.fixedTags || this.plugin.getDefaultFixedTags()).join("\n"))
           .onChange(async (value) => {
             this.plugin.settings.fixedTags = splitTags(value);
             await this.plugin.saveSettings();
@@ -2685,20 +2677,15 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
   }
 
   getWorkflowSummary(): string {
-    return this.plugin.settings.workflowMode === "inbox"
-      ? this.plugin.t("summaryInboxWorkflow")
-      : this.plugin.t("summaryDirectWorkflow");
+    return this.plugin.t("summaryInboxWorkflow");
   }
 
   getDestinationSummary(): string {
-    if (this.plugin.settings.workflowMode === "inbox") {
-      return this.plugin.settings.inboxFolder || DEFAULT_SETTINGS.inboxFolder;
-    }
-    return this.plugin.settings.targetFolder || DEFAULT_SETTINGS.targetFolder;
+    return this.plugin.settings.inboxFolder || DEFAULT_SETTINGS.inboxFolder;
   }
 
   getTagsSummary(): string {
-    const tags = this.plugin.getClipTags(this.getDestinationSummary(), "note.com");
+    const tags = this.plugin.getClipTags(this.getDestinationSummary());
     return tags.length > 0 ? tags.join(", ") : this.plugin.t("summaryNoTags");
   }
 

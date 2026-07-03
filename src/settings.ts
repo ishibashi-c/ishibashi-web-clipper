@@ -1,4 +1,4 @@
-import { DEFAULT_SETTINGS } from "./constants";
+import { DEFAULT_FIXED_TAGS, DEFAULT_SETTINGS } from "./constants";
 import { WebClipperSettings } from "./types";
 import {
   normalizeFileNameLength,
@@ -11,12 +11,21 @@ export function mergeSettings(saved): WebClipperSettings {
   const settings = Object.assign({}, DEFAULT_SETTINGS, saved || {});
   settings.setupCompleted = !!settings.setupCompleted;
   settings.language = settings.language === "en" ? "en" : "ja";
-  settings.workflowMode = settings.workflowMode === "direct" ? "direct" : "inbox";
+  settings.workflowMode = "inbox";
   settings.targetFolder = normalizePath(settings.targetFolder || DEFAULT_SETTINGS.targetFolder);
   settings.inboxFolder = normalizePath(settings.inboxFolder || DEFAULT_SETTINGS.inboxFolder);
+  if (settings.inboxFolder === "08_Webクリップ/10_未整理") {
+    settings.inboxFolder = DEFAULT_SETTINGS.inboxFolder;
+  }
   settings.migrationTargetFolder = normalizePath(settings.migrationTargetFolder || settings.inboxFolder || DEFAULT_SETTINGS.migrationTargetFolder);
+  if (settings.migrationTargetFolder === "08_Webクリップ/10_未整理") {
+    settings.migrationTargetFolder = settings.inboxFolder || DEFAULT_SETTINGS.migrationTargetFolder;
+  }
   settings.fetchMetadata = settings.fetchMetadata ?? settings.fetchPageTitle ?? DEFAULT_SETTINGS.fetchMetadata;
-  settings.fixedTags = Array.isArray(settings.fixedTags) ? settings.fixedTags : DEFAULT_SETTINGS.fixedTags;
+  settings.fixedTags = Array.isArray(settings.fixedTags) ? settings.fixedTags : DEFAULT_FIXED_TAGS[settings.language];
+  if (settings.fixedTags.length === 1 && settings.fixedTags[0] === "webclip" && settings.language === "ja") {
+    settings.fixedTags = DEFAULT_FIXED_TAGS.ja;
+  }
   settings.addDomainTag = settings.addDomainTag ?? DEFAULT_SETTINGS.addDomainTag;
   settings.addFolderTags = !!settings.addFolderTags;
   settings.preventDuplicateUrls = settings.preventDuplicateUrls ?? DEFAULT_SETTINGS.preventDuplicateUrls;

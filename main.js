@@ -34,8 +34,8 @@ var DEFAULT_SETTINGS = {
   language: "ja",
   workflowMode: "inbox",
   targetFolder: "Web Clips",
-  inboxFolder: "08_Web\u30AF\u30EA\u30C3\u30D7/10_\u672A\u6574\u7406",
-  migrationTargetFolder: "08_Web\u30AF\u30EA\u30C3\u30D7/10_\u672A\u6574\u7406",
+  inboxFolder: "Web Clips/10_\u672A\u6574\u7406",
+  migrationTargetFolder: "Web Clips/10_\u672A\u6574\u7406",
   dateFormat: "YYYY-MM-DD HH:mm",
   noteTemplate: [
     "## Link",
@@ -54,7 +54,7 @@ var DEFAULT_SETTINGS = {
   fetchPageTitle: true,
   confirmBeforeSave: false,
   openAfterClip: false,
-  fixedTags: ["webclip"],
+  fixedTags: ["web\u30AF\u30EA\u30C3\u30D7"],
   addDomainTag: true,
   addFolderTags: false,
   preventDuplicateUrls: true,
@@ -63,6 +63,25 @@ var DEFAULT_SETTINGS = {
   libraryInspectorWidth: 280,
   libraryGridColumns: 1,
   clipHistory: []
+};
+var DEFAULT_FIXED_TAGS = {
+  ja: ["web\u30AF\u30EA\u30C3\u30D7"],
+  en: ["webclip"]
+};
+var WEB_CLIP_FOLDER_PRESET = {
+  root: "Web Clips",
+  inbox: "Web Clips/10_\u672A\u6574\u7406",
+  folders: [
+    "Web Clips/10_\u672A\u6574\u7406",
+    "Web Clips/20_\u6280\u8853",
+    "Web Clips/30_\u7D4C\u6E08",
+    "Web Clips/40_\u30A8\u30F3\u30BF\u30E1",
+    "Web Clips/50_\u793E\u4F1A",
+    "Web Clips/60_\u6587\u5316",
+    "Web Clips/70_\u5927\u5B66",
+    "Web Clips/80_\u751F\u6D3B",
+    "Web Clips/90_\u305D\u306E\u4ED6"
+  ]
 };
 
 // src/i18n.ts
@@ -86,7 +105,8 @@ var STRINGS = {
     noticeDuplicate: "\u540C\u3058URL\u306E\u30A6\u30A7\u30D6\u30AF\u30EA\u30C3\u30D7\u304C\u65E2\u306B\u3042\u308A\u307E\u3059\u3002",
     noticeCreated: "\u30A6\u30A7\u30D6\u30AF\u30EA\u30C3\u30D7\u3092\u4F5C\u6210\u3057\u307E\u3057\u305F",
     noticeTargetFolder: "\u4FDD\u5B58\u5148",
-    firstRunDesc: "\u6700\u521D\u306B\u8A00\u8A9E\u3068\u4FDD\u5B58\u30EF\u30FC\u30AF\u30D5\u30ED\u30FC\u3092\u9078\u3093\u3067\u304F\u3060\u3055\u3044\u3002\u5F8C\u304B\u3089\u8A2D\u5B9A\u3067\u5909\u66F4\u3067\u304D\u307E\u3059\u3002",
+    noticeFolderPresetApplied: "\u30D5\u30A9\u30EB\u30C0\u30D7\u30EA\u30BB\u30C3\u30C8\u3092\u4F5C\u6210\u3057\u307E\u3057\u305F\u3002",
+    firstRunDesc: "\u6700\u521D\u306B\u8868\u793A\u8A00\u8A9E\u3092\u9078\u3093\u3067\u304F\u3060\u3055\u3044\u3002Web\u30AF\u30EA\u30C3\u30D7\u306F\u672A\u6574\u7406\u30D5\u30A9\u30EB\u30C0\u306B\u4FDD\u5B58\u3055\u308C\u3001\u5F8C\u304B\u3089\u6574\u7406\u3067\u304D\u307E\u3059\u3002",
     firstRunStart: "\u958B\u59CB",
     settingsIntro: "\u30B9\u30DE\u30DB\u5171\u6709\u3001\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u30EC\u30C3\u30C8\u3001\u30AF\u30EA\u30C3\u30D7\u30DC\u30FC\u30C9\u4FDD\u5B58\u3067\u4F5C\u6210\u3055\u308C\u308B\u30CE\u30FC\u30C8\u306E\u4FDD\u5B58\u30EB\u30FC\u30EB\u3092\u307E\u3068\u3081\u3066\u7BA1\u7406\u3057\u307E\u3059\u3002",
     summaryHeading: "\u73FE\u5728\u306E\u4FDD\u5B58\u30EB\u30FC\u30EB",
@@ -95,16 +115,15 @@ var STRINGS = {
     summaryTags: "\u4ED8\u4E0E\u30BF\u30B0",
     summaryProtection: "\u4FDD\u5B58\u4FDD\u8B77",
     summaryInboxWorkflow: "\u672A\u6574\u7406\u306B\u5165\u308C\u3066\u5F8C\u3067\u6574\u7406",
-    summaryDirectWorkflow: "\u6307\u5B9A\u30D5\u30A9\u30EB\u30C0\u3078\u76F4\u63A5\u4FDD\u5B58",
     summaryNoTags: "\u30BF\u30B0\u306A\u3057",
     summaryDuplicateOn: "\u91CD\u8907URL\u3092\u9632\u6B62",
     summaryDuplicateOff: "\u91CD\u8907URL\u3092\u8A31\u53EF",
     summaryMetadataOn: "\u30E1\u30BF\u30C7\u30FC\u30BF\u53D6\u5F97\u3042\u308A",
     summaryMetadataOff: "\u30E1\u30BF\u30C7\u30FC\u30BF\u53D6\u5F97\u306A\u3057",
     sectionStart: "\u6700\u521D\u306B\u6C7A\u3081\u308B\u3053\u3068",
-    sectionStartDesc: "\u8868\u793A\u8A00\u8A9E\u3068\u3001\u30AF\u30EA\u30C3\u30D7\u3092\u4E00\u65E6\u96C6\u3081\u308B\u304B\u76F4\u63A5\u4FDD\u5B58\u3059\u308B\u304B\u3092\u6C7A\u3081\u307E\u3059\u3002",
+    sectionStartDesc: "\u8868\u793A\u8A00\u8A9E\u3092\u9078\u3073\u307E\u3059\u3002\u4FDD\u5B58\u306E\u6D41\u308C\u306F\u3001\u672A\u6574\u7406\u30D5\u30A9\u30EB\u30C0\u306B\u96C6\u3081\u3066\u5F8C\u304B\u3089\u6574\u7406\u3059\u308B\u5F62\u3067\u3059\u3002",
     sectionDestination: "\u4FDD\u5B58\u5148",
-    sectionDestinationDesc: "\u672A\u6574\u7406\u904B\u7528\u3067\u306F\u307E\u305A\u6574\u7406\u5F85\u3061\u30D5\u30A9\u30EB\u30C0\u3078\u5165\u308C\u3001\u76F4\u63A5\u4FDD\u5B58\u904B\u7528\u3067\u306F\u57FA\u672C\u30D5\u30A9\u30EB\u30C0\u3078\u4FDD\u5B58\u3057\u307E\u3059\u3002",
+    sectionDestinationDesc: "\u65B0\u3057\u3044Web\u30AF\u30EA\u30C3\u30D7\u3092\u307E\u305A\u4FDD\u5B58\u3059\u308B\u672A\u6574\u7406\u30D5\u30A9\u30EB\u30C0\u3092\u6307\u5B9A\u3057\u307E\u3059\u3002\u5FC5\u8981\u306A\u3089\u5206\u985E\u7528\u30D5\u30A9\u30EB\u30C0\u306E\u30D7\u30EA\u30BB\u30C3\u30C8\u3082\u4F5C\u6210\u3067\u304D\u307E\u3059\u3002",
     sectionTags: "\u30BF\u30B0",
     sectionTagsDesc: "\u56FA\u5B9A\u30BF\u30B0\u3001\u4FDD\u5B58\u5143\u30C9\u30E1\u30A4\u30F3\u3001\u4FDD\u5B58\u5148\u30D5\u30A9\u30EB\u30C0\u7531\u6765\u306E\u30BF\u30B0\u3092\u7BA1\u7406\u3057\u307E\u3059\u3002",
     sectionBehavior: "\u4FDD\u5B58\u6642\u306E\u52D5\u304D",
@@ -117,14 +136,12 @@ var STRINGS = {
     sectionMaintenanceDesc: "\u904E\u53BB\u306B\u4F5C\u6210\u3057\u305FWeb\u30AF\u30EA\u30C3\u30D7\u3092\u3001\u73FE\u5728\u306E\u4FDD\u5B58\u30EB\u30FC\u30EB\u306B\u5408\u308F\u305B\u3066frontmatter\u3060\u3051\u6574\u3048\u307E\u3059\u3002",
     settingLanguage: "\u8A00\u8A9E",
     settingLanguageDesc: "\u8A2D\u5B9A\u753B\u9762\u3001\u901A\u77E5\u3001\u78BA\u8A8D\u753B\u9762\u306E\u8868\u793A\u8A00\u8A9E\u3002",
-    settingWorkflow: "\u4FDD\u5B58\u30EF\u30FC\u30AF\u30D5\u30ED\u30FC",
-    settingWorkflowDesc: "\u4E00\u65E6\u6574\u7406\u5F85\u3061\u30D5\u30A9\u30EB\u30C0\u306B\u5165\u308C\u308B\u304B\u3001\u4FDD\u5B58\u6642\u306B\u76F4\u63A5\u30D5\u30A9\u30EB\u30C0\u3092\u9078\u3076\u304B\u3092\u9078\u3073\u307E\u3059\u3002",
     workflowInbox: "\u4E00\u65E6Inbox/\u672A\u6574\u7406\u306B\u4FDD\u5B58\u3057\u3066\u5F8C\u3067\u6574\u7406\u3059\u308B",
-    workflowDirect: "\u4FDD\u5B58\u6642\u306E\u30D5\u30A9\u30EB\u30C0\u306B\u76F4\u63A5\u4FDD\u5B58\u3059\u308B",
     settingInboxFolder: "\u6574\u7406\u5F85\u3061\u30D5\u30A9\u30EB\u30C0",
-    settingInboxFolderDesc: "Inbox\u904B\u7528\u6642\u306B\u3059\u3079\u3066\u306E\u30AF\u30EA\u30C3\u30D7\u3092\u307E\u305A\u4FDD\u5B58\u3059\u308B\u30D5\u30A9\u30EB\u30C0\u3002",
-    settingTargetFolder: "\u76F4\u63A5\u4FDD\u5B58\u5148\u30D5\u30A9\u30EB\u30C0",
-    settingTargetFolderDesc: "\u76F4\u63A5\u4FDD\u5B58\u30E2\u30FC\u30C9\u3001\u307E\u305F\u306F\u78BA\u8A8D\u753B\u9762\u3067\u4F7F\u3046\u57FA\u672C\u30D5\u30A9\u30EB\u30C0\u3002",
+    settingInboxFolderDesc: "\u3059\u3079\u3066\u306E\u30AF\u30EA\u30C3\u30D7\u3092\u307E\u305A\u4FDD\u5B58\u3059\u308B\u30D5\u30A9\u30EB\u30C0\u3002",
+    settingFolderPreset: "\u5206\u985E\u30D5\u30A9\u30EB\u30C0\u30D7\u30EA\u30BB\u30C3\u30C8",
+    settingFolderPresetDesc: "Web Clips\u914D\u4E0B\u306B 10_\u672A\u6574\u7406\u300120_\u6280\u8853\u300130_\u7D4C\u6E08... \u306E\u30D5\u30A9\u30EB\u30C0\u69CB\u6210\u3092\u4F5C\u6210\u3057\u307E\u3059\u3002\u65E2\u5B58\u30D5\u30A9\u30EB\u30C0\u306F\u4E0A\u66F8\u304D\u3057\u307E\u305B\u3093\u3002",
+    settingFolderPresetButton: "\u30D7\u30EA\u30BB\u30C3\u30C8\u3092\u4F5C\u6210",
     settingConfirm: "\u4FDD\u5B58\u524D\u306B\u78BA\u8A8D\u3059\u308B",
     settingConfirmDesc: "\u30BF\u30A4\u30C8\u30EB\u3001\u4FDD\u5B58\u5148\u3001\u30BF\u30B0\u3001\u30E1\u30E2\u3092\u4FDD\u5B58\u524D\u306B\u7DE8\u96C6\u3057\u307E\u3059\u3002",
     settingOpenAfterClip: "\u4FDD\u5B58\u5F8C\u306B\u30CE\u30FC\u30C8\u3092\u958B\u304F",
@@ -259,7 +276,8 @@ var STRINGS = {
     noticeDuplicate: "A web clip with the same URL already exists.",
     noticeCreated: "Created web clip",
     noticeTargetFolder: "Destination",
-    firstRunDesc: "Choose your language and save workflow. You can change these later in settings.",
+    noticeFolderPresetApplied: "Created the folder preset.",
+    firstRunDesc: "Choose your display language. Web clips are collected in an inbox folder so you can organize them later.",
     firstRunStart: "Start",
     settingsIntro: "Manage how notes are created from mobile sharing, bookmarklets, and clipboard saves.",
     summaryHeading: "Current save rules",
@@ -268,16 +286,15 @@ var STRINGS = {
     summaryTags: "Tags",
     summaryProtection: "Save protection",
     summaryInboxWorkflow: "Collect in Inbox and organize later",
-    summaryDirectWorkflow: "Save directly to the destination",
     summaryNoTags: "No tags",
     summaryDuplicateOn: "Duplicate URLs blocked",
     summaryDuplicateOff: "Duplicate URLs allowed",
     summaryMetadataOn: "Metadata fetch on",
     summaryMetadataOff: "Metadata fetch off",
     sectionStart: "Start here",
-    sectionStartDesc: "Choose the display language and whether clips are collected first or saved directly.",
+    sectionStartDesc: "Choose the display language. Clips are collected in an inbox folder first and organized later.",
     sectionDestination: "Destination",
-    sectionDestinationDesc: "Inbox workflow collects clips first. Direct workflow saves to the default destination.",
+    sectionDestinationDesc: "Choose the inbox folder for new web clips. You can also create an optional classification folder preset.",
     sectionTags: "Tags",
     sectionTagsDesc: "Manage fixed tags, source-domain tags, and folder-derived tags.",
     sectionBehavior: "Save behavior",
@@ -290,14 +307,12 @@ var STRINGS = {
     sectionMaintenanceDesc: "Update old web clip frontmatter to match the current save rules.",
     settingLanguage: "Language",
     settingLanguageDesc: "Language for settings, notices, and confirmation screens.",
-    settingWorkflow: "Save workflow",
-    settingWorkflowDesc: "Choose whether clips first go to an inbox folder or directly to the destination folder.",
     workflowInbox: "Save to Inbox first and organize later",
-    workflowDirect: "Save directly to the destination folder",
     settingInboxFolder: "Inbox folder",
-    settingInboxFolderDesc: "Folder where clips are first saved in Inbox workflow.",
-    settingTargetFolder: "Direct destination folder",
-    settingTargetFolderDesc: "Default folder for direct save mode or confirmation edits.",
+    settingInboxFolderDesc: "Folder where all new clips are first saved.",
+    settingFolderPreset: "Classification folder preset",
+    settingFolderPresetDesc: "Creates folders under Web Clips such as 10_\u672A\u6574\u7406, 20_\u6280\u8853, 30_\u7D4C\u6E08, and more. Existing folders are not overwritten.",
+    settingFolderPresetButton: "Create preset",
     settingConfirm: "Confirm before saving",
     settingConfirmDesc: "Edit title, folder, tags, and memo before creating a note.",
     settingOpenAfterClip: "Open note after saving",
@@ -634,10 +649,7 @@ function normalizeGridColumns(value) {
   return Math.max(1, Math.min(3, parsed));
 }
 function tagsFromFolderPath(path) {
-  const mappings = {
-    "08_Web\u30AF\u30EA\u30C3\u30D7": "Web\u30AF\u30EA\u30C3\u30D7"
-  };
-  return normalizePath(path).split("/").filter(Boolean).map((part) => mappings[part] || part.replace(/^\d{2}_/, "")).map(normalizeTag).filter(Boolean).filter((tag, index, tags) => tags.indexOf(tag) === index);
+  return normalizePath(path).split("/").filter(Boolean).map((part) => part.replace(/^\d{2}_/, "")).map(normalizeTag).filter(Boolean).filter((tag, index, tags) => tags.indexOf(tag) === index);
 }
 function tagFromDomain(domain) {
   const host = String(domain || "").toLowerCase().replace(/^www\./, "");
@@ -726,12 +738,21 @@ function mergeSettings(saved) {
   const settings = Object.assign({}, DEFAULT_SETTINGS, saved || {});
   settings.setupCompleted = !!settings.setupCompleted;
   settings.language = settings.language === "en" ? "en" : "ja";
-  settings.workflowMode = settings.workflowMode === "direct" ? "direct" : "inbox";
+  settings.workflowMode = "inbox";
   settings.targetFolder = normalizePath(settings.targetFolder || DEFAULT_SETTINGS.targetFolder);
   settings.inboxFolder = normalizePath(settings.inboxFolder || DEFAULT_SETTINGS.inboxFolder);
+  if (settings.inboxFolder === "08_Web\u30AF\u30EA\u30C3\u30D7/10_\u672A\u6574\u7406") {
+    settings.inboxFolder = DEFAULT_SETTINGS.inboxFolder;
+  }
   settings.migrationTargetFolder = normalizePath(settings.migrationTargetFolder || settings.inboxFolder || DEFAULT_SETTINGS.migrationTargetFolder);
+  if (settings.migrationTargetFolder === "08_Web\u30AF\u30EA\u30C3\u30D7/10_\u672A\u6574\u7406") {
+    settings.migrationTargetFolder = settings.inboxFolder || DEFAULT_SETTINGS.migrationTargetFolder;
+  }
   settings.fetchMetadata = settings.fetchMetadata ?? settings.fetchPageTitle ?? DEFAULT_SETTINGS.fetchMetadata;
-  settings.fixedTags = Array.isArray(settings.fixedTags) ? settings.fixedTags : DEFAULT_SETTINGS.fixedTags;
+  settings.fixedTags = Array.isArray(settings.fixedTags) ? settings.fixedTags : DEFAULT_FIXED_TAGS[settings.language];
+  if (settings.fixedTags.length === 1 && settings.fixedTags[0] === "webclip" && settings.language === "ja") {
+    settings.fixedTags = DEFAULT_FIXED_TAGS.ja;
+  }
   settings.addDomainTag = settings.addDomainTag ?? DEFAULT_SETTINGS.addDomainTag;
   settings.addFolderTags = !!settings.addFolderTags;
   settings.preventDuplicateUrls = settings.preventDuplicateUrls ?? DEFAULT_SETTINGS.preventDuplicateUrls;
@@ -902,10 +923,27 @@ var IshibashiWebClipper = class extends import_obsidian2.Plugin {
     }
   }
   getDefaultTargetFolder() {
-    if (this.settings.workflowMode === "inbox") {
-      return normalizePath(this.settings.inboxFolder || DEFAULT_SETTINGS.inboxFolder);
+    return normalizePath(this.settings.inboxFolder || DEFAULT_SETTINGS.inboxFolder);
+  }
+  getDefaultFixedTags(language = this.settings.language) {
+    return DEFAULT_FIXED_TAGS[language].slice();
+  }
+  isLanguageDefaultFixedTags(tags) {
+    const normalized = tags.map(normalizeTag).filter(Boolean);
+    return Object.values(DEFAULT_FIXED_TAGS).some((defaults) => {
+      const defaultTags = defaults.map(normalizeTag).filter(Boolean);
+      return normalized.length === defaultTags.length && normalized.every((tag, index) => tag === defaultTags[index]);
+    });
+  }
+  async applyFolderPreset() {
+    for (const folder of WEB_CLIP_FOLDER_PRESET.folders) {
+      await this.ensureFolder(folder);
     }
-    return normalizePath(this.settings.targetFolder || DEFAULT_SETTINGS.targetFolder);
+    this.settings.workflowMode = "inbox";
+    this.settings.inboxFolder = WEB_CLIP_FOLDER_PRESET.inbox;
+    this.settings.targetFolder = WEB_CLIP_FOLDER_PRESET.root;
+    this.settings.migrationTargetFolder = WEB_CLIP_FOLDER_PRESET.inbox;
+    await this.saveSettings();
   }
   async resolveMetadata(url, sharedTitle) {
     const fallback = fallbackMetadata(url, sharedTitle);
@@ -1236,7 +1274,6 @@ var FirstRunModal = class extends import_obsidian2.Modal {
     super(app);
     this.plugin = plugin;
     this.language = plugin.settings.language || "ja";
-    this.workflowMode = plugin.settings.workflowMode || "inbox";
   }
   onOpen() {
     const { contentEl } = this;
@@ -1252,22 +1289,14 @@ var FirstRunModal = class extends import_obsidian2.Modal {
         this.onOpen();
       });
     });
-    new import_obsidian2.Setting(contentEl).setName(translate(this.language, "settingWorkflow")).setDesc(translate(this.language, "settingWorkflowDesc")).addDropdown((dropdown) => {
-      dropdown.addOption("inbox", translate(this.language, "workflowInbox")).addOption("direct", translate(this.language, "workflowDirect")).setValue(this.workflowMode).onChange((value) => {
-        this.workflowMode = value;
-      });
-    });
     new import_obsidian2.Setting(contentEl).addButton((button) => {
       button.setCta().setButtonText(translate(this.language, "firstRunStart")).onClick(async () => {
         this.plugin.settings.language = this.language;
-        this.plugin.settings.workflowMode = this.workflowMode;
-        if (this.workflowMode === "inbox") {
-          this.plugin.settings.inboxFolder = this.language === "ja" ? "08_Web\u30AF\u30EA\u30C3\u30D7/10_\u672A\u6574\u7406" : "Web Clips/Inbox";
-          this.plugin.settings.confirmBeforeSave = false;
-        } else {
-          this.plugin.settings.targetFolder = "Web Clips";
-          this.plugin.settings.confirmBeforeSave = true;
-        }
+        this.plugin.settings.workflowMode = "inbox";
+        this.plugin.settings.inboxFolder = DEFAULT_SETTINGS.inboxFolder;
+        this.plugin.settings.migrationTargetFolder = DEFAULT_SETTINGS.migrationTargetFolder;
+        this.plugin.settings.confirmBeforeSave = false;
+        this.plugin.settings.fixedTags = this.plugin.getDefaultFixedTags(this.language);
         this.plugin.settings.setupCompleted = true;
         await this.plugin.saveSettings();
         this.close();
@@ -2447,16 +2476,13 @@ var IshibashiWebClipperSettingTab = class extends import_obsidian2.PluginSetting
     );
     new import_obsidian2.Setting(startSection).setName(this.plugin.t("settingLanguage")).setDesc(this.plugin.t("settingLanguageDesc")).addDropdown((dropdown) => {
       dropdown.addOption("ja", "\u65E5\u672C\u8A9E").addOption("en", "English").setValue(this.plugin.settings.language).onChange(async (value) => {
+        const shouldUpdateFixedTags = this.plugin.isLanguageDefaultFixedTags(this.plugin.settings.fixedTags || []);
         this.plugin.settings.language = value;
+        if (shouldUpdateFixedTags) {
+          this.plugin.settings.fixedTags = this.plugin.getDefaultFixedTags(value);
+        }
         await this.plugin.saveSettings();
         this.plugin.updateRibbonLabel();
-        this.display();
-      });
-    });
-    new import_obsidian2.Setting(startSection).setName(this.plugin.t("settingWorkflow")).setDesc(this.plugin.t("settingWorkflowDesc")).addDropdown((dropdown) => {
-      dropdown.addOption("inbox", this.plugin.t("workflowInbox")).addOption("direct", this.plugin.t("workflowDirect")).setValue(this.plugin.settings.workflowMode).onChange(async (value) => {
-        this.plugin.settings.workflowMode = value;
-        await this.plugin.saveSettings();
         this.display();
       });
     });
@@ -2465,18 +2491,20 @@ var IshibashiWebClipperSettingTab = class extends import_obsidian2.PluginSetting
       this.plugin.t("sectionDestination"),
       this.plugin.t("sectionDestinationDesc")
     );
-    if (this.plugin.settings.workflowMode === "inbox") {
-      new import_obsidian2.Setting(destinationSection).setName(this.plugin.t("settingInboxFolder")).setDesc(this.plugin.t("settingInboxFolderDesc")).addText((text) => {
-        text.setPlaceholder("08_Web\u30AF\u30EA\u30C3\u30D7/10_\u672A\u6574\u7406").setValue(this.plugin.settings.inboxFolder || DEFAULT_SETTINGS.inboxFolder).onChange(async (value) => {
-          this.plugin.settings.inboxFolder = normalizePath(value) || DEFAULT_SETTINGS.inboxFolder;
-          await this.plugin.saveSettings();
-        });
-      });
-    }
-    new import_obsidian2.Setting(destinationSection).setName(this.plugin.t("settingTargetFolder")).setDesc(this.plugin.t("settingTargetFolderDesc")).addText((text) => {
-      text.setPlaceholder("Web Clips").setValue(this.plugin.settings.targetFolder || DEFAULT_SETTINGS.targetFolder).onChange(async (value) => {
-        this.plugin.settings.targetFolder = normalizePath(value) || DEFAULT_SETTINGS.targetFolder;
+    new import_obsidian2.Setting(destinationSection).setName(this.plugin.t("settingInboxFolder")).setDesc(this.plugin.t("settingInboxFolderDesc")).addText((text) => {
+      text.setPlaceholder(DEFAULT_SETTINGS.inboxFolder).setValue(this.plugin.settings.inboxFolder || DEFAULT_SETTINGS.inboxFolder).onChange(async (value) => {
+        const folder = normalizePath(value) || DEFAULT_SETTINGS.inboxFolder;
+        this.plugin.settings.inboxFolder = folder;
+        this.plugin.settings.migrationTargetFolder = this.plugin.settings.migrationTargetFolder || folder;
         await this.plugin.saveSettings();
+        this.refreshSummary();
+      });
+    });
+    new import_obsidian2.Setting(destinationSection).setName(this.plugin.t("settingFolderPreset")).setDesc(this.plugin.t("settingFolderPresetDesc")).addButton((button) => {
+      button.setButtonText(this.plugin.t("settingFolderPresetButton")).onClick(async () => {
+        await this.plugin.applyFolderPreset();
+        new import_obsidian2.Notice(this.plugin.t("noticeFolderPresetApplied"));
+        this.display();
       });
     });
     const tagSection = this.createSection(
@@ -2485,7 +2513,7 @@ var IshibashiWebClipperSettingTab = class extends import_obsidian2.PluginSetting
       this.plugin.t("sectionTagsDesc")
     );
     new import_obsidian2.Setting(tagSection).setName(this.plugin.t("settingFixedTags")).setDesc(this.plugin.t("settingFixedTagsDesc")).addTextArea((text) => {
-      text.setPlaceholder("webclip").setValue((this.plugin.settings.fixedTags || DEFAULT_SETTINGS.fixedTags).join("\n")).onChange(async (value) => {
+      text.setPlaceholder(this.plugin.getDefaultFixedTags().join("\n")).setValue((this.plugin.settings.fixedTags || this.plugin.getDefaultFixedTags()).join("\n")).onChange(async (value) => {
         this.plugin.settings.fixedTags = splitTags(value);
         await this.plugin.saveSettings();
         this.refreshSummary();
@@ -2645,16 +2673,13 @@ var IshibashiWebClipperSettingTab = class extends import_obsidian2.PluginSetting
     });
   }
   getWorkflowSummary() {
-    return this.plugin.settings.workflowMode === "inbox" ? this.plugin.t("summaryInboxWorkflow") : this.plugin.t("summaryDirectWorkflow");
+    return this.plugin.t("summaryInboxWorkflow");
   }
   getDestinationSummary() {
-    if (this.plugin.settings.workflowMode === "inbox") {
-      return this.plugin.settings.inboxFolder || DEFAULT_SETTINGS.inboxFolder;
-    }
-    return this.plugin.settings.targetFolder || DEFAULT_SETTINGS.targetFolder;
+    return this.plugin.settings.inboxFolder || DEFAULT_SETTINGS.inboxFolder;
   }
   getTagsSummary() {
-    const tags = this.plugin.getClipTags(this.getDestinationSummary(), "note.com");
+    const tags = this.plugin.getClipTags(this.getDestinationSummary());
     return tags.length > 0 ? tags.join(", ") : this.plugin.t("summaryNoTags");
   }
   getProtectionSummary() {
