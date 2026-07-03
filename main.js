@@ -978,7 +978,8 @@ var WebClipLibraryView = class extends import_obsidian.ItemView {
         this.selectedPath = item.file.path;
         this.render();
       });
-      const top = card.createDiv({ cls: "ishibashi-web-clipper-library-card-top" });
+      const body = card.createDiv({ cls: "ishibashi-web-clipper-library-card-body" });
+      const top = body.createDiv({ cls: "ishibashi-web-clipper-library-card-top" });
       const check = top.createEl("input", {
         type: "checkbox",
         cls: "ishibashi-web-clipper-library-select"
@@ -1002,7 +1003,7 @@ var WebClipLibraryView = class extends import_obsidian.ItemView {
         text: item.domain || item.site || this.plugin.t("libraryNoDomain"),
         cls: this.isSortKey("domain") ? "ishibashi-web-clipper-library-domain is-sort-key" : "ishibashi-web-clipper-library-domain"
       });
-      const title = card.createDiv({
+      const title = body.createDiv({
         text: item.title || item.file.basename,
         cls: this.isSortKey("title") ? "ishibashi-web-clipper-library-title is-sort-key" : "ishibashi-web-clipper-library-title"
       });
@@ -1017,12 +1018,12 @@ var WebClipLibraryView = class extends import_obsidian.ItemView {
         await this.plugin.openFile(item.file.path);
       });
       if (item.description) {
-        card.createDiv({
+        body.createDiv({
           text: item.description,
           cls: "ishibashi-web-clipper-library-desc"
         });
       }
-      const meta = card.createDiv({ cls: "ishibashi-web-clipper-library-meta" });
+      const meta = body.createDiv({ cls: "ishibashi-web-clipper-library-meta" });
       const folder = meta.createEl("button", {
         text: item.folder || "/",
         cls: "ishibashi-web-clipper-library-folder"
@@ -1033,7 +1034,7 @@ var WebClipLibraryView = class extends import_obsidian.ItemView {
         this.render();
       });
       if (item.tags.length > 0) {
-        const tags = card.createDiv({ cls: "ishibashi-web-clipper-library-tags" });
+        const tags = body.createDiv({ cls: "ishibashi-web-clipper-library-tags" });
         for (const tag of item.tags.slice(0, 8)) {
           const wrap = tags.createSpan({ cls: "ishibashi-web-clipper-library-tag-wrap" });
           const button = wrap.createEl("button", {
@@ -1056,7 +1057,7 @@ var WebClipLibraryView = class extends import_obsidian.ItemView {
           });
         }
       }
-      const addTag = card.createEl("button", {
+      const addTag = body.createEl("button", {
         text: this.plugin.t("libraryAddTag"),
         cls: "ishibashi-web-clipper-library-add-tag"
       });

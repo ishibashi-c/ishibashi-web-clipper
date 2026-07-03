@@ -393,6 +393,8 @@
 
 .ishibashi-web-clipper-library-list {
   display: grid;
+  align-items: start;
+  grid-auto-rows: minmax(340px, auto);
   gap: 18px;
   flex: 1;
   min-height: 0;
@@ -403,8 +405,9 @@
 .ishibashi-web-clipper-library-card {
   position: relative;
   display: flex;
+  box-sizing: border-box;
   min-width: 0;
-  min-height: 0;
+  min-height: 340px;
   flex-direction: column;
   margin-bottom: 0;
   padding: 24px 28px 22px;
@@ -412,6 +415,18 @@
   border-left: 4px solid var(--iwc-library-rule);
   border-radius: 4px;
   background: var(--background-primary);
+  contain: layout paint;
+  overflow: hidden;
+}
+
+.ishibashi-web-clipper-library-card-body {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  padding-bottom: 10px;
+  overflow: hidden;
 }
 
 .ishibashi-web-clipper-library-card.is-selected {
@@ -470,11 +485,11 @@
 }
 
 .ishibashi-web-clipper-library-title {
-  display: block !important;
+  display: -webkit-box !important;
   width: 100%;
   flex: 0 0 auto;
   min-height: 0 !important;
-  height: auto !important;
+  max-height: none !important;
   margin: 16px 0 0;
   padding: 0;
   border: 0;
@@ -485,7 +500,10 @@
   line-height: 1.38;
   text-align: left;
   white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
   overflow-wrap: anywhere;
+  overflow: hidden;
   word-break: normal;
   cursor: pointer;
   box-shadow: none !important;
@@ -501,7 +519,7 @@
 }
 
 .ishibashi-web-clipper-library-title.is-sort-key {
-  display: block !important;
+  display: -webkit-box !important;
   width: auto;
   max-width: 100%;
   padding: 4px 8px;
@@ -513,13 +531,17 @@
 }
 
 .ishibashi-web-clipper-library-desc {
+  display: -webkit-box;
   flex: 0 0 auto;
   max-width: 76ch;
   margin-top: 12px;
   color: var(--text-muted);
   font-size: 0.94em;
   line-height: 1.58;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
   overflow-wrap: anywhere;
+  overflow: hidden;
 }
 
 .ishibashi-web-clipper-library-meta {
@@ -534,8 +556,11 @@
 .ishibashi-web-clipper-library-action {
   min-height: 0;
   padding: 2px 0;
+  border: 0;
   background: transparent;
   color: var(--text-accent);
+  font: inherit;
+  cursor: pointer;
   box-shadow: none !important;
 }
 
@@ -620,11 +645,14 @@
 .ishibashi-web-clipper-library-card-footer {
   display: flex;
   flex: 0 0 auto;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-top: auto;
+  min-height: 32px;
+  margin-top: 14px;
   padding-top: 12px;
   border-top: 1px solid var(--iwc-library-rule);
+  background: var(--background-primary);
 }
 
 .ishibashi-web-clipper-library-action {
@@ -732,12 +760,13 @@
 
 .ishibashi-web-clipper-library-list.is-columns-2,
 .ishibashi-web-clipper-library-list.is-columns-3 {
+  grid-auto-rows: minmax(400px, auto);
   gap: 14px;
 }
 
 .ishibashi-web-clipper-library-list.is-columns-2 .ishibashi-web-clipper-library-card,
 .ishibashi-web-clipper-library-list.is-columns-3 .ishibashi-web-clipper-library-card {
-  min-height: 0;
+  min-height: 400px;
   padding: 18px 18px 16px;
   border-left-width: 3px;
 }
@@ -768,6 +797,7 @@
   margin-top: 12px;
   font-size: 0.98em;
   line-height: 1.34;
+  -webkit-line-clamp: 4;
 }
 
 .ishibashi-web-clipper-library-list.is-columns-2 .ishibashi-web-clipper-library-desc,
@@ -775,6 +805,7 @@
   margin-top: 10px;
   font-size: 0.86em;
   line-height: 1.48;
+  -webkit-line-clamp: 4;
 }
 
 .ishibashi-web-clipper-library-list.is-columns-2 .ishibashi-web-clipper-library-meta,
