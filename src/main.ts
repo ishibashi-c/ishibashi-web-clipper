@@ -47,6 +47,7 @@ const DEFAULT_SETTINGS = {
   maxFileNameLength: 48,
   librarySidebarWidth: 280,
   libraryInspectorWidth: 280,
+  libraryGridColumns: 1,
   clipHistory: []
 };
 
@@ -98,6 +99,7 @@ interface WebClipperSettings {
   maxFileNameLength: number;
   librarySidebarWidth: number;
   libraryInspectorWidth: number;
+  libraryGridColumns: number;
   clipHistory: ClipHistoryEntry[];
 }
 
@@ -264,26 +266,27 @@ export default class IshibashiWebClipper extends Plugin {
       new Notice(this.t("noticeInvalidUrl"));
       return;
     }
+    const resolvedUrl = await this.resolveSharedRedirect(normalizedUrl);
 
     const duplicate = this.settings.preventDuplicateUrls
-      ? await this.findExistingClip(normalizedUrl)
+      ? await this.findExistingClip(resolvedUrl)
       : null;
     if (duplicate) {
       new Notice(this.t("noticeDuplicate"));
       await this.openFile(duplicate.path);
       await this.recordHistory({
-        url: normalizedUrl,
-        title: duplicate.basename || titleFromUrl(normalizedUrl),
+        url: resolvedUrl,
+        title: duplicate.basename || titleFromUrl(resolvedUrl),
         path: duplicate.path,
         status: "duplicate"
       });
       return;
     }
 
-    const metadata = await this.resolveMetadata(normalizedUrl, input.title);
+    const metadata = await this.resolveMetadata(resolvedUrl, input.title);
     const targetFolder = this.getDefaultTargetFolder();
     const clip = {
-      url: normalizedUrl,
+      url: resolvedUrl,
       title: metadata.title,
       note: cleanMemo(input.note),
       targetFolder,
@@ -297,6 +300,19 @@ export default class IshibashiWebClipper extends Plugin {
     if (!confirmedClip) return;
 
     await this.createClipNote(confirmedClip);
+  }
+
+  async resolveSharedRedirect(url: string): Promise<string> {
+    if (!shouldResolveSharedRedirect(url)) return url;
+    try {
+      const resolved = await resolveFetchFinalUrl(url, 8000);
+      return resolved && normalizeCacheKey(resolved) !== normalizeCacheKey(url)
+        ? resolved
+        : url;
+    } catch (error) {
+      console.warn("Failed to resolve shared redirect URL", error);
+      return url;
+    }
   }
 
   getDefaultTargetFolder(): string {
@@ -657,6 +673,37 @@ export default class IshibashiWebClipper extends Plugin {
       }
     }
     return result;
+  }
+
+  async updateWebClipOrganization(file: TFile, folder: string, tags: string[]): Promise<TFile> {
+    const targetFolder = normalizePath(folder || getParentPath(file));
+    await this.ensureFolder(targetFolder);
+
+    await (this.app.fileManager as any).processFrontMatter(file, (frontmatter) => {
+      frontmatter.tags = unique(tags.map(normalizeTag).filter(Boolean));
+    });
+
+    const currentFolder = getParentPath(file);
+    if (targetFolder === currentFolder) return file;
+
+    const nextPath = await this.nextAvailableMovePath(targetFolder, file);
+    await this.app.fileManager.renameFile(file, nextPath);
+    const moved = this.app.vault.getAbstractFileByPath(nextPath);
+    return moved instanceof TFile ? moved : file;
+  }
+
+  async nextAvailableMovePath(folder: string, file: TFile): Promise<string> {
+    const baseName = sanitizeFileName(file.basename) || "Untitled";
+    const extension = file.extension ? `.${file.extension}` : "";
+    let path = `${folder}/${baseName}${extension}`;
+    if (!(await this.app.vault.adapter.exists(path))) return path;
+
+    let index = 2;
+    while (await this.app.vault.adapter.exists(path)) {
+      path = `${folder}/${baseName}-${index}${extension}`;
+      index += 1;
+    }
+    return path;
   }
 
   async openFile(path) {
@@ -1170,7 +1217,22 @@ class WebClipLibraryView extends ItemView {
       this.render();
     });
 
-    const list = main.createDiv({ cls: "ishibashi-web-clipper-library-list" });
+    const columns = controls.createEl("select", { cls: "ishibashi-web-clipper-library-columns" });
+    this.addSortOption(columns, "1", this.plugin.t("libraryColumns1"));
+    this.addSortOption(columns, "2", this.plugin.t("libraryColumns2"));
+    this.addSortOption(columns, "3", this.plugin.t("libraryColumns3"));
+    columns.value = String(normalizeGridColumns(this.plugin.settings.libraryGridColumns));
+    columns.addEventListener("change", async () => {
+      this.plugin.settings.libraryGridColumns = normalizeGridColumns(columns.value);
+      await this.plugin.saveSettings();
+      this.render();
+    });
+
+    const gridColumns = normalizeGridColumns(this.plugin.settings.libraryGridColumns);
+    const list = main.createDiv({
+      cls: `ishibashi-web-clipper-library-list is-columns-${gridColumns}`
+    });
+    list.style.gridTemplateColumns = `repeat(${gridColumns}, minmax(0, 1fr))`;
     if (filtered.length === 0) {
       list.createDiv({
         text: this.plugin.t("libraryEmpty"),
@@ -1224,6 +1286,16 @@ class WebClipLibraryView extends ItemView {
           if (sourceUrl) window.open(sourceUrl, "_blank", "noopener");
         });
       }
+
+      const edit = meta.createEl("button", {
+        text: this.plugin.t("libraryEditClip"),
+        cls: "ishibashi-web-clipper-library-link"
+      });
+      edit.addEventListener("click", () => {
+        new WebClipEditModal(this.app, this.plugin, item, async () => {
+          await this.load();
+        }).open();
+      });
 
       if (item.tags.length > 0) {
         const tags = card.createDiv({ cls: "ishibashi-web-clipper-library-tags" });
@@ -1376,6 +1448,107 @@ class WebClipLibraryView extends ItemView {
         if (this.groupSortBy === "name-desc") return b.label.localeCompare(a.label) || b.count - a.count;
         return b.count - a.count || a.label.localeCompare(b.label);
       });
+  }
+}
+
+class WebClipEditModal extends Modal {
+  plugin: IshibashiWebClipper;
+  item: WebClipLibraryItem;
+  folder: string;
+  tagsText: string;
+  onSubmit: () => Promise<void>;
+  submitting: boolean;
+
+  constructor(app: any, plugin: IshibashiWebClipper, item: WebClipLibraryItem, onSubmit: () => Promise<void>) {
+    super(app);
+    this.plugin = plugin;
+    this.item = item;
+    this.folder = item.folder;
+    this.tagsText = item.tags.join("\n");
+    this.onSubmit = onSubmit;
+    this.submitting = false;
+  }
+
+  onOpen() {
+    this.render();
+  }
+
+  render() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.addClass("ishibashi-web-clipper-edit");
+    contentEl.createEl("h2", { text: this.plugin.t("libraryEditTitle") });
+    contentEl.createEl("p", {
+      text: this.item.title || this.item.file.basename,
+      cls: "ishibashi-web-clipper-modal-help"
+    });
+
+    new Setting(contentEl)
+      .setName(this.plugin.t("fieldFolder"))
+      .setDesc(this.plugin.t("libraryEditFolderDesc"))
+      .addText((text) => {
+        text
+          .setValue(this.folder)
+          .onChange((value) => {
+            this.folder = normalizePath(value);
+          });
+      });
+
+    new Setting(contentEl)
+      .setName(this.plugin.t("fieldTags"))
+      .setDesc(this.plugin.t("libraryEditTagsDesc"))
+      .addTextArea((text) => {
+        text
+          .setValue(this.tagsText)
+          .onChange((value) => {
+            this.tagsText = value;
+          });
+        text.inputEl.rows = 7;
+      });
+
+    new Setting(contentEl)
+      .addButton((button) => {
+        button
+          .setButtonText(this.plugin.t("buttonCancel"))
+          .setDisabled(this.submitting)
+          .onClick(() => this.close());
+      })
+      .addButton((button) => {
+        button
+          .setCta()
+          .setButtonText(this.plugin.t("libraryEditApply"))
+          .setDisabled(this.submitting)
+          .onClick(async () => {
+            await this.apply();
+          });
+      });
+  }
+
+  async apply() {
+    if (this.submitting) return;
+    const folder = normalizePath(this.folder);
+    if (!folder) {
+      new Notice(this.plugin.t("libraryEditFolderRequired"));
+      return;
+    }
+
+    this.submitting = true;
+    this.render();
+    try {
+      await this.plugin.updateWebClipOrganization(this.item.file, folder, splitTags(this.tagsText));
+      new Notice(this.plugin.t("libraryEditComplete"));
+      this.close();
+      await this.onSubmit();
+    } catch (error) {
+      console.error(error);
+      new Notice(this.plugin.t("libraryEditFailed"));
+      this.submitting = false;
+      this.render();
+    }
+  }
+
+  onClose() {
+    this.contentEl.empty();
   }
 }
 
@@ -1888,6 +2061,7 @@ function mergeSettings(saved) {
   settings.maxFileNameLength = normalizeFileNameLength(settings.maxFileNameLength);
   settings.librarySidebarWidth = normalizeLibraryPaneWidth(settings.librarySidebarWidth, 220, 420, DEFAULT_SETTINGS.librarySidebarWidth);
   settings.libraryInspectorWidth = normalizeLibraryPaneWidth(settings.libraryInspectorWidth, 220, 420, DEFAULT_SETTINGS.libraryInspectorWidth);
+  settings.libraryGridColumns = normalizeGridColumns(settings.libraryGridColumns);
   settings.clipHistory = Array.isArray(settings.clipHistory) ? settings.clipHistory.slice(0, 100) : [];
   return settings;
 }
@@ -2005,9 +2179,20 @@ const STRINGS = {
     librarySortTitleDesc: "タイトル 降順",
     librarySortDomainAsc: "ドメイン 昇順",
     librarySortDomainDesc: "ドメイン 降順",
+    libraryColumns1: "1列",
+    libraryColumns2: "2列",
+    libraryColumns3: "3列",
     libraryEmpty: "条件に合うWebクリップがありません。",
     libraryNoDomain: "ドメインなし",
     libraryOpenSource: "元ページ",
+    libraryEditClip: "編集",
+    libraryEditTitle: "Webクリップを整理",
+    libraryEditFolderDesc: "移動先フォルダ。存在しない場合は作成します。",
+    libraryEditTagsDesc: "タグを改行またはカンマ区切りで貼り付けできます。",
+    libraryEditApply: "変更を適用",
+    libraryEditFolderRequired: "移動先フォルダを入力してください。",
+    libraryEditComplete: "Webクリップを更新しました。",
+    libraryEditFailed: "Webクリップの更新に失敗しました。",
     libraryOverview: "概要",
     libraryTotal: "総数",
     libraryFiltered: "表示中",
@@ -2148,9 +2333,20 @@ const STRINGS = {
     librarySortTitleDesc: "Title desc",
     librarySortDomainAsc: "Domain asc",
     librarySortDomainDesc: "Domain desc",
+    libraryColumns1: "1 column",
+    libraryColumns2: "2 columns",
+    libraryColumns3: "3 columns",
     libraryEmpty: "No web clips match the current filters.",
     libraryNoDomain: "No domain",
     libraryOpenSource: "Source",
+    libraryEditClip: "Edit",
+    libraryEditTitle: "Organize web clip",
+    libraryEditFolderDesc: "Destination folder. It will be created if it does not exist.",
+    libraryEditTagsDesc: "Paste tags separated by newlines or commas.",
+    libraryEditApply: "Apply changes",
+    libraryEditFolderRequired: "Enter a destination folder.",
+    libraryEditComplete: "Updated web clip.",
+    libraryEditFailed: "Failed to update web clip.",
     libraryOverview: "Overview",
     libraryTotal: "Total",
     libraryFiltered: "Visible",
@@ -2457,6 +2653,12 @@ function normalizeLibraryPaneWidth(value, min: number, max: number, fallback: nu
   return Math.max(min, Math.min(max, parsed));
 }
 
+function normalizeGridColumns(value): number {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return DEFAULT_SETTINGS.libraryGridColumns;
+  return Math.max(1, Math.min(3, parsed));
+}
+
 function tagsFromFolderPath(path) {
   const mappings = {
     "08_Webクリップ": "Webクリップ"
@@ -2528,6 +2730,31 @@ function shortHash(value) {
 
 function nowIsoString() {
   return new Date().toISOString();
+}
+
+function shouldResolveSharedRedirect(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.toLowerCase().replace(/^www\./, "");
+    return host === "share.google" || host.endsWith(".share.google");
+  } catch {
+    return false;
+  }
+}
+
+async function resolveFetchFinalUrl(url: string, timeoutMs: number): Promise<string> {
+  if (typeof fetch !== "function") return "";
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      redirect: "follow",
+      signal: controller.signal
+    });
+    return normalizeUrl(response.url || "");
+  } finally {
+    window.clearTimeout(timer);
+  }
 }
 
 function inferCreatedAt(createdAt: string, created: string, file: TFile): string {

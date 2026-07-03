@@ -59,6 +59,7 @@ var DEFAULT_SETTINGS = {
   maxFileNameLength: 48,
   librarySidebarWidth: 280,
   libraryInspectorWidth: 280,
+  libraryGridColumns: 1,
   clipHistory: []
 };
 var IshibashiWebClipper = class extends import_obsidian.Plugin {
@@ -171,22 +172,23 @@ var IshibashiWebClipper = class extends import_obsidian.Plugin {
       new import_obsidian.Notice(this.t("noticeInvalidUrl"));
       return;
     }
-    const duplicate = this.settings.preventDuplicateUrls ? await this.findExistingClip(normalizedUrl) : null;
+    const resolvedUrl = await this.resolveSharedRedirect(normalizedUrl);
+    const duplicate = this.settings.preventDuplicateUrls ? await this.findExistingClip(resolvedUrl) : null;
     if (duplicate) {
       new import_obsidian.Notice(this.t("noticeDuplicate"));
       await this.openFile(duplicate.path);
       await this.recordHistory({
-        url: normalizedUrl,
-        title: duplicate.basename || titleFromUrl(normalizedUrl),
+        url: resolvedUrl,
+        title: duplicate.basename || titleFromUrl(resolvedUrl),
         path: duplicate.path,
         status: "duplicate"
       });
       return;
     }
-    const metadata = await this.resolveMetadata(normalizedUrl, input.title);
+    const metadata = await this.resolveMetadata(resolvedUrl, input.title);
     const targetFolder = this.getDefaultTargetFolder();
     const clip = {
-      url: normalizedUrl,
+      url: resolvedUrl,
       title: metadata.title,
       note: cleanMemo(input.note),
       targetFolder,
@@ -196,6 +198,16 @@ var IshibashiWebClipper = class extends import_obsidian.Plugin {
     const confirmedClip = this.settings.confirmBeforeSave ? await this.confirmClip(clip) : clip;
     if (!confirmedClip) return;
     await this.createClipNote(confirmedClip);
+  }
+  async resolveSharedRedirect(url) {
+    if (!shouldResolveSharedRedirect(url)) return url;
+    try {
+      const resolved = await resolveFetchFinalUrl(url, 8e3);
+      return resolved && normalizeCacheKey(resolved) !== normalizeCacheKey(url) ? resolved : url;
+    } catch (error) {
+      console.warn("Failed to resolve shared redirect URL", error);
+      return url;
+    }
   }
   getDefaultTargetFolder() {
     if (this.settings.workflowMode === "inbox") {
@@ -493,6 +505,31 @@ var IshibashiWebClipper = class extends import_obsidian.Plugin {
       }
     }
     return result;
+  }
+  async updateWebClipOrganization(file, folder, tags) {
+    const targetFolder = normalizePath(folder || getParentPath(file));
+    await this.ensureFolder(targetFolder);
+    await this.app.fileManager.processFrontMatter(file, (frontmatter) => {
+      frontmatter.tags = unique(tags.map(normalizeTag).filter(Boolean));
+    });
+    const currentFolder = getParentPath(file);
+    if (targetFolder === currentFolder) return file;
+    const nextPath = await this.nextAvailableMovePath(targetFolder, file);
+    await this.app.fileManager.renameFile(file, nextPath);
+    const moved = this.app.vault.getAbstractFileByPath(nextPath);
+    return moved instanceof import_obsidian.TFile ? moved : file;
+  }
+  async nextAvailableMovePath(folder, file) {
+    const baseName = sanitizeFileName(file.basename) || "Untitled";
+    const extension = file.extension ? `.${file.extension}` : "";
+    let path = `${folder}/${baseName}${extension}`;
+    if (!await this.app.vault.adapter.exists(path)) return path;
+    let index = 2;
+    while (await this.app.vault.adapter.exists(path)) {
+      path = `${folder}/${baseName}-${index}${extension}`;
+      index += 1;
+    }
+    return path;
   }
   async openFile(path) {
     if (!path) return;
@@ -891,7 +928,21 @@ var WebClipLibraryView = class extends import_obsidian.ItemView {
       this.sortBy = sort.value;
       this.render();
     });
-    const list = main.createDiv({ cls: "ishibashi-web-clipper-library-list" });
+    const columns = controls.createEl("select", { cls: "ishibashi-web-clipper-library-columns" });
+    this.addSortOption(columns, "1", this.plugin.t("libraryColumns1"));
+    this.addSortOption(columns, "2", this.plugin.t("libraryColumns2"));
+    this.addSortOption(columns, "3", this.plugin.t("libraryColumns3"));
+    columns.value = String(normalizeGridColumns(this.plugin.settings.libraryGridColumns));
+    columns.addEventListener("change", async () => {
+      this.plugin.settings.libraryGridColumns = normalizeGridColumns(columns.value);
+      await this.plugin.saveSettings();
+      this.render();
+    });
+    const gridColumns = normalizeGridColumns(this.plugin.settings.libraryGridColumns);
+    const list = main.createDiv({
+      cls: `ishibashi-web-clipper-library-list is-columns-${gridColumns}`
+    });
+    list.style.gridTemplateColumns = `repeat(${gridColumns}, minmax(0, 1fr))`;
     if (filtered.length === 0) {
       list.createDiv({
         text: this.plugin.t("libraryEmpty"),
@@ -935,6 +986,15 @@ var WebClipLibraryView = class extends import_obsidian.ItemView {
           if (sourceUrl) window.open(sourceUrl, "_blank", "noopener");
         });
       }
+      const edit = meta.createEl("button", {
+        text: this.plugin.t("libraryEditClip"),
+        cls: "ishibashi-web-clipper-library-link"
+      });
+      edit.addEventListener("click", () => {
+        new WebClipEditModal(this.app, this.plugin, item, async () => {
+          await this.load();
+        }).open();
+      });
       if (item.tags.length > 0) {
         const tags = card.createDiv({ cls: "ishibashi-web-clipper-library-tags" });
         for (const tag of item.tags.slice(0, 8)) {
@@ -1064,6 +1124,72 @@ var WebClipLibraryView = class extends import_obsidian.ItemView {
       if (this.groupSortBy === "name-desc") return b.label.localeCompare(a.label) || b.count - a.count;
       return b.count - a.count || a.label.localeCompare(b.label);
     });
+  }
+};
+var WebClipEditModal = class extends import_obsidian.Modal {
+  constructor(app, plugin, item, onSubmit) {
+    super(app);
+    this.plugin = plugin;
+    this.item = item;
+    this.folder = item.folder;
+    this.tagsText = item.tags.join("\n");
+    this.onSubmit = onSubmit;
+    this.submitting = false;
+  }
+  onOpen() {
+    this.render();
+  }
+  render() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.addClass("ishibashi-web-clipper-edit");
+    contentEl.createEl("h2", { text: this.plugin.t("libraryEditTitle") });
+    contentEl.createEl("p", {
+      text: this.item.title || this.item.file.basename,
+      cls: "ishibashi-web-clipper-modal-help"
+    });
+    new import_obsidian.Setting(contentEl).setName(this.plugin.t("fieldFolder")).setDesc(this.plugin.t("libraryEditFolderDesc")).addText((text) => {
+      text.setValue(this.folder).onChange((value) => {
+        this.folder = normalizePath(value);
+      });
+    });
+    new import_obsidian.Setting(contentEl).setName(this.plugin.t("fieldTags")).setDesc(this.plugin.t("libraryEditTagsDesc")).addTextArea((text) => {
+      text.setValue(this.tagsText).onChange((value) => {
+        this.tagsText = value;
+      });
+      text.inputEl.rows = 7;
+    });
+    new import_obsidian.Setting(contentEl).addButton((button) => {
+      button.setButtonText(this.plugin.t("buttonCancel")).setDisabled(this.submitting).onClick(() => this.close());
+    }).addButton((button) => {
+      button.setCta().setButtonText(this.plugin.t("libraryEditApply")).setDisabled(this.submitting).onClick(async () => {
+        await this.apply();
+      });
+    });
+  }
+  async apply() {
+    if (this.submitting) return;
+    const folder = normalizePath(this.folder);
+    if (!folder) {
+      new import_obsidian.Notice(this.plugin.t("libraryEditFolderRequired"));
+      return;
+    }
+    this.submitting = true;
+    this.render();
+    try {
+      await this.plugin.updateWebClipOrganization(this.item.file, folder, splitTags(this.tagsText));
+      new import_obsidian.Notice(this.plugin.t("libraryEditComplete"));
+      this.close();
+      await this.onSubmit();
+    } catch (error) {
+      console.error(error);
+      new import_obsidian.Notice(this.plugin.t("libraryEditFailed"));
+      this.submitting = false;
+      this.render();
+    }
+  }
+  onClose() {
+    this.contentEl.empty();
   }
 };
 var WebClipMigrationModal = class extends import_obsidian.Modal {
@@ -1419,6 +1545,7 @@ function mergeSettings(saved) {
   settings.maxFileNameLength = normalizeFileNameLength(settings.maxFileNameLength);
   settings.librarySidebarWidth = normalizeLibraryPaneWidth(settings.librarySidebarWidth, 220, 420, DEFAULT_SETTINGS.librarySidebarWidth);
   settings.libraryInspectorWidth = normalizeLibraryPaneWidth(settings.libraryInspectorWidth, 220, 420, DEFAULT_SETTINGS.libraryInspectorWidth);
+  settings.libraryGridColumns = normalizeGridColumns(settings.libraryGridColumns);
   settings.clipHistory = Array.isArray(settings.clipHistory) ? settings.clipHistory.slice(0, 100) : [];
   return settings;
 }
@@ -1535,9 +1662,20 @@ var STRINGS = {
     librarySortTitleDesc: "\u30BF\u30A4\u30C8\u30EB \u964D\u9806",
     librarySortDomainAsc: "\u30C9\u30E1\u30A4\u30F3 \u6607\u9806",
     librarySortDomainDesc: "\u30C9\u30E1\u30A4\u30F3 \u964D\u9806",
+    libraryColumns1: "1\u5217",
+    libraryColumns2: "2\u5217",
+    libraryColumns3: "3\u5217",
     libraryEmpty: "\u6761\u4EF6\u306B\u5408\u3046Web\u30AF\u30EA\u30C3\u30D7\u304C\u3042\u308A\u307E\u305B\u3093\u3002",
     libraryNoDomain: "\u30C9\u30E1\u30A4\u30F3\u306A\u3057",
     libraryOpenSource: "\u5143\u30DA\u30FC\u30B8",
+    libraryEditClip: "\u7DE8\u96C6",
+    libraryEditTitle: "Web\u30AF\u30EA\u30C3\u30D7\u3092\u6574\u7406",
+    libraryEditFolderDesc: "\u79FB\u52D5\u5148\u30D5\u30A9\u30EB\u30C0\u3002\u5B58\u5728\u3057\u306A\u3044\u5834\u5408\u306F\u4F5C\u6210\u3057\u307E\u3059\u3002",
+    libraryEditTagsDesc: "\u30BF\u30B0\u3092\u6539\u884C\u307E\u305F\u306F\u30AB\u30F3\u30DE\u533A\u5207\u308A\u3067\u8CBC\u308A\u4ED8\u3051\u3067\u304D\u307E\u3059\u3002",
+    libraryEditApply: "\u5909\u66F4\u3092\u9069\u7528",
+    libraryEditFolderRequired: "\u79FB\u52D5\u5148\u30D5\u30A9\u30EB\u30C0\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002",
+    libraryEditComplete: "Web\u30AF\u30EA\u30C3\u30D7\u3092\u66F4\u65B0\u3057\u307E\u3057\u305F\u3002",
+    libraryEditFailed: "Web\u30AF\u30EA\u30C3\u30D7\u306E\u66F4\u65B0\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002",
     libraryOverview: "\u6982\u8981",
     libraryTotal: "\u7DCF\u6570",
     libraryFiltered: "\u8868\u793A\u4E2D",
@@ -1678,9 +1816,20 @@ var STRINGS = {
     librarySortTitleDesc: "Title desc",
     librarySortDomainAsc: "Domain asc",
     librarySortDomainDesc: "Domain desc",
+    libraryColumns1: "1 column",
+    libraryColumns2: "2 columns",
+    libraryColumns3: "3 columns",
     libraryEmpty: "No web clips match the current filters.",
     libraryNoDomain: "No domain",
     libraryOpenSource: "Source",
+    libraryEditClip: "Edit",
+    libraryEditTitle: "Organize web clip",
+    libraryEditFolderDesc: "Destination folder. It will be created if it does not exist.",
+    libraryEditTagsDesc: "Paste tags separated by newlines or commas.",
+    libraryEditApply: "Apply changes",
+    libraryEditFolderRequired: "Enter a destination folder.",
+    libraryEditComplete: "Updated web clip.",
+    libraryEditFailed: "Failed to update web clip.",
     libraryOverview: "Overview",
     libraryTotal: "Total",
     libraryFiltered: "Visible",
@@ -1921,6 +2070,11 @@ function normalizeLibraryPaneWidth(value, min, max, fallback) {
   if (!Number.isFinite(parsed)) return fallback;
   return Math.max(min, Math.min(max, parsed));
 }
+function normalizeGridColumns(value) {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return DEFAULT_SETTINGS.libraryGridColumns;
+  return Math.max(1, Math.min(3, parsed));
+}
 function tagsFromFolderPath(path) {
   const mappings = {
     "08_Web\u30AF\u30EA\u30C3\u30D7": "Web\u30AF\u30EA\u30C3\u30D7"
@@ -1966,6 +2120,29 @@ function shortHash(value) {
 }
 function nowIsoString() {
   return (/* @__PURE__ */ new Date()).toISOString();
+}
+function shouldResolveSharedRedirect(url) {
+  try {
+    const host = new URL(url).hostname.toLowerCase().replace(/^www\./, "");
+    return host === "share.google" || host.endsWith(".share.google");
+  } catch {
+    return false;
+  }
+}
+async function resolveFetchFinalUrl(url, timeoutMs) {
+  if (typeof fetch !== "function") return "";
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      redirect: "follow",
+      signal: controller.signal
+    });
+    return normalizeUrl(response.url || "");
+  } finally {
+    window.clearTimeout(timer);
+  }
 }
 function inferCreatedAt(createdAt, created, file) {
   const existing = Date.parse(createdAt || "");

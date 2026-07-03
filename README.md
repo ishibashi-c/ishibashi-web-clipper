@@ -58,9 +58,12 @@ The library reads saved web clip frontmatter across the vault and provides:
 - Search across title, URL, description, folder, and tags.
 - Sorting results by date, title, or domain, ascending or descending.
 - The active sort key is highlighted in each card.
+- Switch the result grid between 1, 2, and 3 columns.
 - Resizable browse, result, and overview panes.
+- Edit tags and move a clip to another folder from the library.
 - Summary counts and frequently used tags.
 - One-click opening for the Obsidian note or original source page.
+- `share.google` links are resolved to their final URL before saving when possible.
 
 ### Update existing web clips
 
@@ -201,9 +204,12 @@ Inbox運用では、設定した整理待ちフォルダへ保存し、後から
 - タイトル、URL、説明、フォルダ、タグを横断検索
 - 日付、タイトル、ドメインで昇順/降順に並べ替え
 - 並び替え中の項目をカード内で強調表示
+- 検索結果を1列、2列、3列のグリッド表示に切り替え
 - 分類、検索結果、概要のペイン幅をドラッグで変更
+- 管理ページからタグ編集とフォルダ移動を実行
 - 総数、表示中件数、ドメイン数、タグ数、よく使うタグを確認
 - Obsidianノートまたは元ページをワンクリックで開く
+- `share.google` リンクは可能な範囲で元URLに解決して保存
 
 ### 既存Webクリップを最新版形式に整える
 
