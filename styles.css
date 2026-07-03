@@ -402,9 +402,10 @@
 
 .ishibashi-web-clipper-library-card {
   position: relative;
-  display: flex;
+  display: grid;
   min-height: 260px;
-  flex-direction: column;
+  grid-template-rows: auto auto auto auto auto auto;
+  align-content: start;
   margin-bottom: 0;
   padding: 24px 28px 22px;
   border: 1px solid var(--iwc-library-rule);
@@ -426,14 +427,13 @@
 
 .ishibashi-web-clipper-library-card-top,
 .ishibashi-web-clipper-library-meta {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 18px;
+  gap: 12px;
 }
 
 .ishibashi-web-clipper-library-card-top {
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 22px max-content minmax(0, 1fr);
+  align-items: start;
 }
 
 .ishibashi-web-clipper-library-select {
@@ -457,29 +457,34 @@
   background: var(--iwc-library-sort-fill);
   color: var(--iwc-library-sort-text);
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .ishibashi-web-clipper-library-domain {
+  min-width: 0;
+  text-align: right;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .ishibashi-web-clipper-library-title {
-  display: block;
+  display: block !important;
   width: 100%;
-  min-height: 0;
-  height: auto;
-  margin: 14px 0 0;
+  min-height: 0 !important;
+  height: auto !important;
+  margin: 16px 0 0;
   padding: 0;
+  border: 0;
   background: transparent;
   color: var(--text-normal);
   font-size: 1.04em;
   font-weight: 700;
-  line-height: 1.58;
+  line-height: 1.38;
   text-align: left;
   white-space: normal;
   overflow-wrap: anywhere;
+  word-break: normal;
   box-shadow: none !important;
 }
 
@@ -488,7 +493,7 @@
 }
 
 .ishibashi-web-clipper-library-title.is-sort-key {
-  display: inline-block;
+  display: block !important;
   width: auto;
   max-width: 100%;
   padding: 4px 8px;
@@ -501,14 +506,16 @@
 
 .ishibashi-web-clipper-library-desc {
   max-width: 76ch;
-  margin-top: 14px;
+  margin-top: 12px;
   color: var(--text-muted);
   font-size: 0.94em;
-  line-height: 1.72;
+  line-height: 1.58;
+  overflow-wrap: anywhere;
 }
 
 .ishibashi-web-clipper-library-meta {
-  margin-top: 18px;
+  display: block;
+  margin-top: 16px;
   overflow-wrap: anywhere;
 }
 
@@ -523,6 +530,8 @@
 }
 
 .ishibashi-web-clipper-library-folder {
+  display: block;
+  width: 100%;
   color: var(--text-muted);
   text-align: left;
   overflow-wrap: anywhere;
@@ -533,7 +542,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 18px;
+  margin-top: 14px;
 }
 
 .ishibashi-web-clipper-library-tag-wrap {
@@ -559,7 +568,7 @@
 
 .ishibashi-web-clipper-library-tag-remove {
   min-height: 0;
-  padding: 5px 7px;
+  padding: 5px 6px;
   border: 1px solid var(--iwc-library-rule);
   border-left: 0;
   border-radius: 0 4px 4px 0;
@@ -600,8 +609,8 @@
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  margin-top: auto;
-  padding-top: 16px;
+  margin-top: 16px;
+  padding-top: 12px;
   border-top: 1px solid var(--iwc-library-rule);
 }
 
@@ -660,16 +669,13 @@
 
 .ishibashi-web-clipper-library-list.is-columns-2 .ishibashi-web-clipper-library-card,
 .ishibashi-web-clipper-library-list.is-columns-3 .ishibashi-web-clipper-library-card {
-  min-height: 300px;
   padding: 18px 18px 16px;
   border-left-width: 3px;
 }
 
 .ishibashi-web-clipper-library-list.is-columns-2 .ishibashi-web-clipper-library-card-top,
-.ishibashi-web-clipper-library-list.is-columns-2 .ishibashi-web-clipper-library-meta,
-.ishibashi-web-clipper-library-list.is-columns-3 .ishibashi-web-clipper-library-card-top,
-.ishibashi-web-clipper-library-list.is-columns-3 .ishibashi-web-clipper-library-meta {
-  align-items: flex-start;
+.ishibashi-web-clipper-library-list.is-columns-3 .ishibashi-web-clipper-library-card-top {
+  grid-template-columns: 22px max-content minmax(58px, 1fr);
   gap: 10px;
 }
 
@@ -677,20 +683,26 @@
 .ishibashi-web-clipper-library-list.is-columns-3 .ishibashi-web-clipper-library-title {
   margin-top: 12px;
   font-size: 0.98em;
-  line-height: 1.45;
+  line-height: 1.34;
 }
 
 .ishibashi-web-clipper-library-list.is-columns-2 .ishibashi-web-clipper-library-desc,
 .ishibashi-web-clipper-library-list.is-columns-3 .ishibashi-web-clipper-library-desc {
   margin-top: 10px;
   font-size: 0.86em;
-  line-height: 1.55;
+  line-height: 1.48;
 }
 
 .ishibashi-web-clipper-library-list.is-columns-2 .ishibashi-web-clipper-library-meta,
 .ishibashi-web-clipper-library-list.is-columns-3 .ishibashi-web-clipper-library-meta {
-  flex-wrap: wrap;
-  margin-top: 14px;
+  margin-top: 12px;
+  font-size: 0.78em;
+}
+
+.ishibashi-web-clipper-library-list.is-columns-2 .ishibashi-web-clipper-library-date,
+.ishibashi-web-clipper-library-list.is-columns-2 .ishibashi-web-clipper-library-domain,
+.ishibashi-web-clipper-library-list.is-columns-3 .ishibashi-web-clipper-library-date,
+.ishibashi-web-clipper-library-list.is-columns-3 .ishibashi-web-clipper-library-domain {
   font-size: 0.78em;
 }
 
