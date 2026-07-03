@@ -1,7 +1,7 @@
 {
   "id": "ishibashi-web-clipper",
   "name": "Ishibashi Web Clipper",
-  "version": "0.8.0",
+  "version": "1.0.0",
   "minAppVersion": "1.5.0",
   "description": "Captures shared web links as Markdown notes with public metadata, duplicate checks, tags, and clip history.",
   "author": "koudai",
