@@ -963,6 +963,8 @@ class WebClipLibraryView extends ItemView {
   selectedPaths: Set<string>;
   loading: boolean;
   hasLoaded: boolean;
+  refreshStatus: "idle" | "refreshing" | "complete";
+  refreshStatusTimer: number | null;
 
   constructor(leaf: any, plugin: IshibashiWebClipper) {
     super(leaf);
@@ -980,6 +982,8 @@ class WebClipLibraryView extends ItemView {
     this.selectedPaths = new Set();
     this.loading = false;
     this.hasLoaded = false;
+    this.refreshStatus = "idle";
+    this.refreshStatusTimer = null;
   }
 
   getViewType() {
@@ -1003,18 +1007,43 @@ class WebClipLibraryView extends ItemView {
   async onClose() {
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
+    if (this.refreshStatusTimer !== null) {
+      window.clearTimeout(this.refreshStatusTimer);
+      this.refreshStatusTimer = null;
+    }
   }
 
-  async load() {
+  async load(showRefreshFeedback = false) {
+    if (this.refreshStatusTimer !== null) {
+      window.clearTimeout(this.refreshStatusTimer);
+      this.refreshStatusTimer = null;
+    }
+    if (showRefreshFeedback) {
+      this.refreshStatus = "refreshing";
+    }
     this.loading = true;
     this.render();
-    this.items = await this.plugin.collectWebClipLibraryItems();
+    const minimumFeedback = showRefreshFeedback
+      ? new Promise((resolve) => window.setTimeout(resolve, 450))
+      : Promise.resolve();
+    const items = await this.plugin.collectWebClipLibraryItems();
+    await minimumFeedback;
+    this.items = items;
     this.selectedPaths = new Set(Array.from(this.selectedPaths).filter((path) => this.items.some((item) => item.file.path === path)));
     if (this.selectedPath && !this.items.some((item) => item.file.path === this.selectedPath)) {
       this.selectedPath = "";
     }
     this.hasLoaded = true;
     this.loading = false;
+    if (showRefreshFeedback) {
+      this.refreshStatus = "complete";
+      new Notice(this.plugin.t("libraryRefreshComplete"));
+      this.refreshStatusTimer = window.setTimeout(() => {
+        this.refreshStatus = "idle";
+        this.refreshStatusTimer = null;
+        this.render();
+      }, 1800);
+    }
     this.render();
   }
 
@@ -1031,14 +1060,23 @@ class WebClipLibraryView extends ItemView {
       text: this.plugin.t("librarySubtitle"),
       cls: "ishibashi-web-clipper-library-subtitle"
     });
+    const refreshLabel = this.refreshStatus === "refreshing"
+      ? this.plugin.t("libraryRefreshing")
+      : this.refreshStatus === "complete"
+        ? this.plugin.t("libraryRefreshComplete")
+        : this.plugin.t("libraryRefresh");
     const refresh = header.createEl("button", {
-      text: this.loading ? this.plugin.t("libraryRefreshing") : this.plugin.t("libraryRefresh"),
-      cls: this.loading ? "mod-cta ishibashi-web-clipper-library-refresh is-loading" : "mod-cta ishibashi-web-clipper-library-refresh"
+      text: refreshLabel,
+      cls: this.refreshStatus === "refreshing"
+        ? "mod-cta ishibashi-web-clipper-library-refresh is-loading"
+        : this.refreshStatus === "complete"
+          ? "mod-cta ishibashi-web-clipper-library-refresh is-complete"
+          : "mod-cta ishibashi-web-clipper-library-refresh"
     });
     refresh.disabled = this.loading;
     refresh.setAttr("aria-busy", this.loading ? "true" : "false");
     refresh.addEventListener("click", async () => {
-      await this.load();
+      await this.load(true);
     });
 
     if (this.loading && !this.hasLoaded) {
@@ -2832,6 +2870,7 @@ const STRINGS = {
     librarySubtitle: "保存済みクリップをフォルダ、ドメイン、タグで横断的に見直します。",
     libraryRefresh: "更新",
     libraryRefreshing: "更新中...",
+    libraryRefreshComplete: "更新完了しました",
     libraryLoading: "Webクリップを読み込んでいます。",
     libraryBrowseBy: "分類",
     libraryByFolder: "フォルダ",
@@ -3004,6 +3043,7 @@ const STRINGS = {
     librarySubtitle: "Review saved clips across folders, domains, and tags.",
     libraryRefresh: "Refresh",
     libraryRefreshing: "Refreshing...",
+    libraryRefreshComplete: "Refresh complete",
     libraryLoading: "Loading web clips.",
     libraryBrowseBy: "Browse by",
     libraryByFolder: "Folder",

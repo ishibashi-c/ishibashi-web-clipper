@@ -714,6 +714,8 @@ var WebClipLibraryView = class extends import_obsidian.ItemView {
     this.selectedPaths = /* @__PURE__ */ new Set();
     this.loading = false;
     this.hasLoaded = false;
+    this.refreshStatus = "idle";
+    this.refreshStatusTimer = null;
   }
   getViewType() {
     return VIEW_TYPE_CLIP_LIBRARY;
@@ -732,17 +734,40 @@ var WebClipLibraryView = class extends import_obsidian.ItemView {
   async onClose() {
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
+    if (this.refreshStatusTimer !== null) {
+      window.clearTimeout(this.refreshStatusTimer);
+      this.refreshStatusTimer = null;
+    }
   }
-  async load() {
+  async load(showRefreshFeedback = false) {
+    if (this.refreshStatusTimer !== null) {
+      window.clearTimeout(this.refreshStatusTimer);
+      this.refreshStatusTimer = null;
+    }
+    if (showRefreshFeedback) {
+      this.refreshStatus = "refreshing";
+    }
     this.loading = true;
     this.render();
-    this.items = await this.plugin.collectWebClipLibraryItems();
+    const minimumFeedback = showRefreshFeedback ? new Promise((resolve) => window.setTimeout(resolve, 450)) : Promise.resolve();
+    const items = await this.plugin.collectWebClipLibraryItems();
+    await minimumFeedback;
+    this.items = items;
     this.selectedPaths = new Set(Array.from(this.selectedPaths).filter((path) => this.items.some((item) => item.file.path === path)));
     if (this.selectedPath && !this.items.some((item) => item.file.path === this.selectedPath)) {
       this.selectedPath = "";
     }
     this.hasLoaded = true;
     this.loading = false;
+    if (showRefreshFeedback) {
+      this.refreshStatus = "complete";
+      new import_obsidian.Notice(this.plugin.t("libraryRefreshComplete"));
+      this.refreshStatusTimer = window.setTimeout(() => {
+        this.refreshStatus = "idle";
+        this.refreshStatusTimer = null;
+        this.render();
+      }, 1800);
+    }
     this.render();
   }
   render() {
@@ -757,14 +782,15 @@ var WebClipLibraryView = class extends import_obsidian.ItemView {
       text: this.plugin.t("librarySubtitle"),
       cls: "ishibashi-web-clipper-library-subtitle"
     });
+    const refreshLabel = this.refreshStatus === "refreshing" ? this.plugin.t("libraryRefreshing") : this.refreshStatus === "complete" ? this.plugin.t("libraryRefreshComplete") : this.plugin.t("libraryRefresh");
     const refresh = header.createEl("button", {
-      text: this.loading ? this.plugin.t("libraryRefreshing") : this.plugin.t("libraryRefresh"),
-      cls: this.loading ? "mod-cta ishibashi-web-clipper-library-refresh is-loading" : "mod-cta ishibashi-web-clipper-library-refresh"
+      text: refreshLabel,
+      cls: this.refreshStatus === "refreshing" ? "mod-cta ishibashi-web-clipper-library-refresh is-loading" : this.refreshStatus === "complete" ? "mod-cta ishibashi-web-clipper-library-refresh is-complete" : "mod-cta ishibashi-web-clipper-library-refresh"
     });
     refresh.disabled = this.loading;
     refresh.setAttr("aria-busy", this.loading ? "true" : "false");
     refresh.addEventListener("click", async () => {
-      await this.load();
+      await this.load(true);
     });
     if (this.loading && !this.hasLoaded) {
       container.createDiv({
@@ -2059,6 +2085,7 @@ var STRINGS = {
     librarySubtitle: "\u4FDD\u5B58\u6E08\u307F\u30AF\u30EA\u30C3\u30D7\u3092\u30D5\u30A9\u30EB\u30C0\u3001\u30C9\u30E1\u30A4\u30F3\u3001\u30BF\u30B0\u3067\u6A2A\u65AD\u7684\u306B\u898B\u76F4\u3057\u307E\u3059\u3002",
     libraryRefresh: "\u66F4\u65B0",
     libraryRefreshing: "\u66F4\u65B0\u4E2D...",
+    libraryRefreshComplete: "\u66F4\u65B0\u5B8C\u4E86\u3057\u307E\u3057\u305F",
     libraryLoading: "Web\u30AF\u30EA\u30C3\u30D7\u3092\u8AAD\u307F\u8FBC\u3093\u3067\u3044\u307E\u3059\u3002",
     libraryBrowseBy: "\u5206\u985E",
     libraryByFolder: "\u30D5\u30A9\u30EB\u30C0",
@@ -2231,6 +2258,7 @@ var STRINGS = {
     librarySubtitle: "Review saved clips across folders, domains, and tags.",
     libraryRefresh: "Refresh",
     libraryRefreshing: "Refreshing...",
+    libraryRefreshComplete: "Refresh complete",
     libraryLoading: "Loading web clips.",
     libraryBrowseBy: "Browse by",
     libraryByFolder: "Folder",
