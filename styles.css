@@ -426,9 +426,10 @@
 }
 
 .ishibashi-web-clipper-library-list {
-  display: grid;
-  align-items: start;
-  grid-auto-rows: auto;
+  display: flex;
+  align-content: flex-start;
+  align-items: stretch;
+  flex-wrap: wrap;
   gap: 18px;
   flex: 1;
   min-height: 0;
@@ -440,25 +441,28 @@
   position: relative;
   display: flex;
   box-sizing: border-box;
+  width: 100%;
   min-width: 0;
-  min-height: 0;
+  height: 330px;
+  min-height: 330px;
   flex-direction: column;
+  flex: 0 0 100%;
   margin-bottom: 0;
   padding: 24px 28px 22px;
   border: 1px solid var(--iwc-library-rule);
   border-left: 4px solid var(--iwc-library-rule);
   border-radius: 4px;
   background: var(--background-primary);
-  overflow: visible;
+  overflow: hidden;
 }
 
 .ishibashi-web-clipper-library-card-body {
   display: flex;
   min-width: 0;
   min-height: 0;
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   flex-direction: column;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .ishibashi-web-clipper-library-card.is-selected {
@@ -571,7 +575,7 @@
   font-size: 0.94em;
   line-height: 1.58;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   overflow-wrap: anywhere;
   overflow: hidden;
 }
@@ -611,6 +615,11 @@
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 14px;
+}
+
+.ishibashi-web-clipper-library-card-body > .ishibashi-web-clipper-library-tags {
+  max-height: 76px;
+  overflow: hidden;
 }
 
 .ishibashi-web-clipper-library-tag-wrap {
@@ -681,7 +690,7 @@
   justify-content: space-between;
   gap: 12px;
   min-height: 32px;
-  margin-top: 20px;
+  margin-top: 14px;
   padding-top: 12px;
   border-top: 1px solid var(--iwc-library-rule);
   background: var(--background-primary);
@@ -694,7 +703,7 @@
 
 .ishibashi-web-clipper-library-bulk {
   display: flex;
-  grid-column: 1 / -1;
+  width: 100%;
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
@@ -792,15 +801,25 @@
 
 .ishibashi-web-clipper-library-list.is-columns-2,
 .ishibashi-web-clipper-library-list.is-columns-3 {
-  grid-auto-rows: auto;
   gap: 14px;
 }
 
 .ishibashi-web-clipper-library-list.is-columns-2 .ishibashi-web-clipper-library-card,
 .ishibashi-web-clipper-library-list.is-columns-3 .ishibashi-web-clipper-library-card {
-  min-height: 0;
+  min-height: 360px;
+  height: 360px;
   padding: 18px 18px 16px;
   border-left-width: 3px;
+}
+
+.ishibashi-web-clipper-library-list.is-columns-2 .ishibashi-web-clipper-library-card {
+  flex-basis: calc((100% - 14px) / 2);
+  max-width: calc((100% - 14px) / 2);
+}
+
+.ishibashi-web-clipper-library-list.is-columns-3 .ishibashi-web-clipper-library-card {
+  flex-basis: calc((100% - 28px) / 3);
+  max-width: calc((100% - 28px) / 3);
 }
 
 .ishibashi-web-clipper-library-list.is-columns-2 .ishibashi-web-clipper-library-card-top,
@@ -837,7 +856,7 @@
   margin-top: 10px;
   font-size: 0.86em;
   line-height: 1.48;
-  -webkit-line-clamp: 4;
+  -webkit-line-clamp: 3;
 }
 
 .ishibashi-web-clipper-library-list.is-columns-2 .ishibashi-web-clipper-library-meta,
@@ -892,6 +911,7 @@
 }
 
 .ishibashi-web-clipper-library-empty {
+  width: 100%;
   padding: 24px;
   color: var(--text-muted);
   text-align: center;
@@ -922,8 +942,9 @@
   }
 
   .ishibashi-web-clipper-library-list {
-    display: grid;
-    grid-template-columns: 1fr !important;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
   }
 
   .ishibashi-web-clipper-library-main {
@@ -935,6 +956,10 @@
   }
 
   .ishibashi-web-clipper-library-card {
+    flex-basis: 100% !important;
+    max-width: 100% !important;
+    height: auto;
+    min-height: 0;
     padding: 20px;
   }
 }
@@ -971,8 +996,9 @@
 }
 
 .ishibashi-web-clipper-library.is-compact .ishibashi-web-clipper-library-list {
-  display: grid;
-  grid-template-columns: 1fr !important;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
 }
 
 .ishibashi-web-clipper-library.is-compact .ishibashi-web-clipper-library-main {
@@ -984,6 +1010,10 @@
 }
 
 .ishibashi-web-clipper-library.is-compact .ishibashi-web-clipper-library-card {
+  flex-basis: 100% !important;
+  max-width: 100% !important;
+  height: auto;
+  min-height: 0;
   padding: 20px;
 }
 

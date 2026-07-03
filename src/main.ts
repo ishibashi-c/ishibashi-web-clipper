@@ -1286,7 +1286,7 @@ class WebClipLibraryView extends ItemView {
     const list = main.createDiv({
       cls: `ishibashi-web-clipper-library-list is-columns-${gridColumns}`
     });
-    list.style.gridTemplateColumns = `repeat(${gridColumns}, minmax(0, 1fr))`;
+    list.style.setProperty("--iwc-library-columns", String(gridColumns));
 
     if (this.selectedPaths.size > 0) {
       this.renderBulkBar(list);
