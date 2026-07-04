@@ -1,5 +1,8 @@
 import {
+  App,
+  EventRef,
   ItemView,
+  Menu,
   Modal,
   Notice,
   Plugin,
@@ -7,6 +10,7 @@ import {
   Setting,
   TFile,
   TFolder,
+  WorkspaceLeaf,
   requestUrl
 } from "obsidian";
 
@@ -23,7 +27,6 @@ import { translate } from "./i18n";
 import { mergeSettings } from "./settings";
 import {
   ClipDraft,
-  ClipHistoryEntry,
   WebClipLibraryItem,
   WebClipMetadata,
   WebClipMigrationItem,
@@ -50,7 +53,6 @@ import {
   isStrictWebClipFrontmatter,
   isWebClipFrontmatter,
   libraryTime,
-  looksLikeUrl,
   normalizeCacheKey,
   normalizeFileNameLength,
   normalizeFrontmatterTags,
@@ -69,7 +71,6 @@ import {
   shouldResolveSharedRedirect,
   shortHash,
   splitTags,
-  stripTrailingSlash,
   tagFromDomain,
   tagsFromFolderPath,
   titleFromUrl,
@@ -78,6 +79,14 @@ import {
   urlsMatch,
   withTimeout
 } from "./utils";
+
+type ProtocolParams = Record<string, string | string[] | undefined>;
+type FrontmatterData = Record<string, unknown>;
+type PartialClipInput = {
+  url: string;
+  title?: string;
+  note?: string;
+};
 
 export default class IshibashiWebClipper extends Plugin {
   settings: WebClipperSettings;
@@ -106,22 +115,25 @@ export default class IshibashiWebClipper extends Plugin {
       (leaf) => new WebClipLibraryView(leaf, this)
     );
 
+    const workspaceWithShareMenu = this.app.workspace as typeof this.app.workspace & {
+      on(name: "receive-text-menu", callback: (menu: Menu, sharedText: string) => void): EventRef;
+    };
     this.registerEvent(
-      (this.app.workspace as any).on("receive-text-menu", (menu: any, sharedText: string) => {
+      workspaceWithShareMenu.on("receive-text-menu", (menu: Menu, sharedText: string) => {
         menu.addItem((item) => {
           item
             .setSection("options")
             .setIcon("link")
             .setTitle(this.t("menuSaveClip"))
-            .onClick(async () => {
-              await this.captureFromSharedText(sharedText);
+            .onClick(() => {
+              void this.captureFromSharedText(sharedText);
             });
         });
       })
     );
 
-    this.ribbonIconEl = this.addRibbonIcon("library", this.t("ribbonOpenLibrary"), async () => {
-      await this.openClipLibrary();
+    this.ribbonIconEl = this.addRibbonIcon("library", this.t("ribbonOpenLibrary"), () => {
+      void this.openClipLibrary();
     });
 
     this.addCommand({
@@ -185,10 +197,13 @@ export default class IshibashiWebClipper extends Plugin {
   }
 
   getVaultName(): string {
-    return (this.app.vault as any).getName?.() || "";
+    const vaultWithName = this.app.vault as typeof this.app.vault & {
+      getName?: () => string;
+    };
+    return vaultWithName.getName?.() || "";
   }
 
-  async captureFromParams(params) {
+  async captureFromParams(params: ProtocolParams) {
     const sharedText = firstValue(params.text);
     const parsed = parseSharedText(sharedText
       ? decodeProtocolText(sharedText)
@@ -215,11 +230,11 @@ export default class IshibashiWebClipper extends Plugin {
     }
   }
 
-  async captureFromSharedText(sharedText) {
+  async captureFromSharedText(sharedText: string) {
     await this.captureFromText(sharedText, this.t("noticeNoSharedUrl"));
   }
 
-  async captureFromText(text, errorMessage) {
+  async captureFromText(text: string, errorMessage: string) {
     const parsed = parseSharedText(text);
     if (!parsed.url) {
       new Notice(errorMessage);
@@ -229,7 +244,7 @@ export default class IshibashiWebClipper extends Plugin {
     await this.prepareClip(parsed);
   }
 
-  async prepareClip(input) {
+  async prepareClip(input: PartialClipInput) {
     const normalizedUrl = normalizeUrl(input.url);
     if (!normalizedUrl) {
       new Notice(this.t("noticeInvalidUrl"));
@@ -536,14 +551,14 @@ export default class IshibashiWebClipper extends Plugin {
       leaf = this.app.workspace.getRightLeaf(false) || this.app.workspace.getLeaf(true);
       await leaf.setViewState({ type: VIEW_TYPE_CLIP_HISTORY, active: true });
     }
-    this.app.workspace.revealLeaf(leaf);
+    await this.app.workspace.revealLeaf(leaf);
   }
 
   async openClipLibrary(location: "main" | "side" = "main") {
     if (location === "side") {
       const leaf = this.app.workspace.getRightLeaf(false) || this.app.workspace.getLeaf(true);
       await leaf.setViewState({ type: VIEW_TYPE_CLIP_LIBRARY, active: true });
-      this.app.workspace.revealLeaf(leaf);
+      await this.app.workspace.revealLeaf(leaf);
       return;
     }
 
@@ -552,7 +567,7 @@ export default class IshibashiWebClipper extends Plugin {
       leaf = this.app.workspace.getLeaf(true);
       await leaf.setViewState({ type: VIEW_TYPE_CLIP_LIBRARY, active: true });
     }
-    this.app.workspace.revealLeaf(leaf);
+    await this.app.workspace.revealLeaf(leaf);
   }
 
   async collectWebClipLibraryItems(): Promise<WebClipLibraryItem[]> {
@@ -616,7 +631,7 @@ export default class IshibashiWebClipper extends Plugin {
     return items;
   }
 
-  getMigrationChanges(file: TFile, frontmatter: Record<string, any>): string[] {
+  getMigrationChanges(file: TFile, frontmatter: FrontmatterData): string[] {
     const changes: string[] = [];
     const source = frontmatterString(frontmatter.source);
     const domain = domainFromUrl(source);
@@ -649,7 +664,7 @@ export default class IshibashiWebClipper extends Plugin {
     const result = { updated: 0, failed: 0 };
     for (const item of items) {
       try {
-        await (this.app.fileManager as any).processFrontMatter(item.file, (frontmatter) => {
+        await this.app.fileManager.processFrontMatter(item.file, (frontmatter: FrontmatterData) => {
           const source = frontmatterString(frontmatter.source);
           const domain = domainFromUrl(source);
           const targetFolder = getParentPath(item.file);
@@ -685,7 +700,7 @@ export default class IshibashiWebClipper extends Plugin {
     const targetFolder = normalizePath(folder || getParentPath(file));
     await this.ensureFolder(targetFolder);
 
-    await (this.app.fileManager as any).processFrontMatter(file, (frontmatter) => {
+    await this.app.fileManager.processFrontMatter(file, (frontmatter: FrontmatterData) => {
       frontmatter.tags = unique(tags.map(normalizeTag).filter(Boolean));
     });
 
@@ -712,7 +727,7 @@ export default class IshibashiWebClipper extends Plugin {
     return path;
   }
 
-  async openFile(path) {
+  async openFile(path: string) {
     if (!path) return;
     const file = this.app.vault.getAbstractFileByPath(path);
     if (file instanceof TFile) {
@@ -727,7 +742,7 @@ class FirstRunModal extends Modal {
   createPreset: boolean;
   starting: boolean;
 
-  constructor(app: any, plugin: IshibashiWebClipper) {
+  constructor(app: App, plugin: IshibashiWebClipper) {
     super(app);
     this.plugin = plugin;
     this.language = plugin.settings.language || "ja";
@@ -774,11 +789,11 @@ class FirstRunModal extends Modal {
         button
           .setCta()
           .setButtonText(translate(this.language, "firstRunStart"))
-          .onClick(async () => {
+          .onClick(() => {
             if (this.starting) return;
             this.starting = true;
             button.setDisabled(true);
-            try {
+            void (async () => {
               const preset = this.plugin.getFolderPreset(this.language);
               this.plugin.settings.language = this.language;
               this.plugin.settings.workflowMode = "inbox";
@@ -799,12 +814,12 @@ class FirstRunModal extends Modal {
                 }
               }
               this.close();
-            } catch (error) {
+            })().catch((error: unknown) => {
               this.starting = false;
               button.setDisabled(false);
               console.error("Failed to complete Ishibashi Web Clipper setup.", error);
               new Notice(translate(this.language, "noticeSetupFailed"));
-            }
+            });
           });
       });
   }
@@ -820,7 +835,7 @@ class ClipConfirmModal extends Modal {
   onSubmit: (clip: ClipDraft | null) => void;
   submitted: boolean;
 
-  constructor(app: any, plugin: IshibashiWebClipper, clip: ClipDraft, onSubmit: (clip: ClipDraft | null) => void) {
+  constructor(app: App, plugin: IshibashiWebClipper, clip: ClipDraft, onSubmit: (clip: ClipDraft | null) => void) {
     super(app);
     this.plugin = plugin;
     this.clip = {
@@ -911,7 +926,7 @@ class ClipConfirmModal extends Modal {
 class ClipHistoryView extends ItemView {
   plugin: IshibashiWebClipper;
 
-  constructor(leaf: any, plugin: IshibashiWebClipper) {
+  constructor(leaf: WorkspaceLeaf, plugin: IshibashiWebClipper) {
     super(leaf);
     this.plugin = plugin;
   }
@@ -952,8 +967,8 @@ class ClipHistoryView extends ItemView {
         text: entry.title || entry.url,
         cls: "ishibashi-web-clipper-history-title"
       });
-      title.addEventListener("click", async () => {
-        await this.plugin.openFile(entry.path);
+      title.addEventListener("click", () => {
+        void this.plugin.openFile(entry.path);
       });
       row.createDiv({
         text: [entry.domain, entry.created, entry.status].filter(Boolean).join(" ・ "),
@@ -987,7 +1002,7 @@ class WebClipLibraryView extends ItemView {
   refreshStatus: "idle" | "refreshing" | "complete";
   refreshStatusTimer: number | null;
 
-  constructor(leaf: any, plugin: IshibashiWebClipper) {
+  constructor(leaf: WorkspaceLeaf, plugin: IshibashiWebClipper) {
     super(leaf);
     this.plugin = plugin;
     this.items = [];
@@ -1096,8 +1111,8 @@ class WebClipLibraryView extends ItemView {
     });
     refresh.disabled = this.loading;
     refresh.setAttr("aria-busy", this.loading ? "true" : "false");
-    refresh.addEventListener("click", async () => {
-      await this.load(true);
+    refresh.addEventListener("click", () => {
+      void this.load(true);
     });
 
     if (this.loading && !this.hasLoaded) {
@@ -1149,7 +1164,7 @@ class WebClipLibraryView extends ItemView {
     handle.addEventListener("pointerdown", (event: PointerEvent) => {
       this.startResize(event, pane, container);
     });
-    handle.addEventListener("keydown", async (event: KeyboardEvent) => {
+    handle.addEventListener("keydown", (event: KeyboardEvent) => {
       const step = event.shiftKey ? 40 : 16;
       if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
       event.preventDefault();
@@ -1170,7 +1185,7 @@ class WebClipLibraryView extends ItemView {
         );
       }
       this.applyLayoutColumns(container);
-      await this.plugin.saveSettings();
+      void this.plugin.saveSettings();
     });
   }
 
@@ -1203,13 +1218,13 @@ class WebClipLibraryView extends ItemView {
       this.applyLayoutColumns(layout);
     };
 
-    const onUp = async (upEvent: PointerEvent) => {
+    const onUp = (upEvent: PointerEvent) => {
       target.removeClass("is-dragging");
       target.releasePointerCapture(upEvent.pointerId);
       target.removeEventListener("pointermove", onMove);
       target.removeEventListener("pointerup", onUp);
       target.removeEventListener("pointercancel", onUp);
-      await this.plugin.saveSettings();
+      void this.plugin.saveSettings();
     };
 
     target.addEventListener("pointermove", onMove);
@@ -1299,9 +1314,9 @@ class WebClipLibraryView extends ItemView {
     this.addSortOption(columns, "2", this.plugin.t("libraryColumns2"));
     this.addSortOption(columns, "3", this.plugin.t("libraryColumns3"));
     columns.value = String(normalizeGridColumns(this.plugin.settings.libraryGridColumns));
-    columns.addEventListener("change", async () => {
+    columns.addEventListener("change", () => {
       this.plugin.settings.libraryGridColumns = normalizeGridColumns(columns.value);
-      await this.plugin.saveSettings();
+      void this.plugin.saveSettings();
       this.render();
     });
 
@@ -1335,7 +1350,7 @@ class WebClipLibraryView extends ItemView {
       card.addEventListener("dragstart", (event) => {
         event.dataTransfer?.setData("text/plain", item.file.path);
         event.dataTransfer?.setData("application/x-ishibashi-web-clip", item.file.path);
-        event.dataTransfer!.effectAllowed = "move";
+        if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
       });
       card.addEventListener("click", (event) => {
         const target = event.target as HTMLElement;
@@ -1381,13 +1396,13 @@ class WebClipLibraryView extends ItemView {
       });
       title.setAttr("role", "button");
       title.setAttr("tabindex", "0");
-      title.addEventListener("click", async () => {
-        await this.plugin.openFile(item.file.path);
+      title.addEventListener("click", () => {
+        void this.plugin.openFile(item.file.path);
       });
-      title.addEventListener("keydown", async (event: KeyboardEvent) => {
+      title.addEventListener("keydown", (event: KeyboardEvent) => {
         if (event.key !== "Enter" && event.key !== " ") return;
         event.preventDefault();
-        await this.plugin.openFile(item.file.path);
+        void this.plugin.openFile(item.file.path);
       });
 
       if (item.description) {
@@ -1427,8 +1442,8 @@ class WebClipLibraryView extends ItemView {
             cls: "ishibashi-web-clipper-library-tag-remove"
           });
           remove.setAttr("aria-label", this.plugin.t("libraryRemoveTag").replace("{{tag}}", tag));
-          remove.addEventListener("click", async () => {
-            await this.removeTag(item, tag);
+          remove.addEventListener("click", () => {
+            void this.removeTag(item, tag);
           });
         }
       }
@@ -1445,9 +1460,7 @@ class WebClipLibraryView extends ItemView {
           this.plugin.t("libraryAddTag"),
           [],
           false,
-          async (tags) => {
-            await this.addTags(item, tags);
-          }
+          (tags) => this.addTags(item, tags)
         ).open();
       });
 
@@ -1572,7 +1585,7 @@ class WebClipLibraryView extends ItemView {
         this.items,
         this.plugin.t("libraryBulkMoveFolder"),
         selectedFolder,
-        async (folder) => {
+        (folder) => {
           selectedFolder = folder;
           folderButton.setText(folder || "/");
         }
@@ -1591,7 +1604,7 @@ class WebClipLibraryView extends ItemView {
         this.plugin.t("libraryChooseTags"),
         selectedTags,
         true,
-        async (tags) => {
+        (tags) => {
           selectedTags = tags;
           renderTagPreview();
         }
@@ -1603,14 +1616,14 @@ class WebClipLibraryView extends ItemView {
       text: this.plugin.t("libraryEditApply"),
       cls: "mod-cta"
     });
-    apply.addEventListener("click", async () => {
-      await this.applyOrganization(item, selectedFolder, selectedTags);
+    apply.addEventListener("click", () => {
+      void this.applyOrganization(item, selectedFolder, selectedTags);
     });
     const open = actions.createEl("button", {
       text: this.plugin.t("libraryOpenNote")
     });
-    open.addEventListener("click", async () => {
-      await this.plugin.openFile(item.file.path);
+    open.addEventListener("click", () => {
+      void this.plugin.openFile(item.file.path);
     });
   }
 
@@ -1629,9 +1642,7 @@ class WebClipLibraryView extends ItemView {
         this.plugin.t("libraryBulkAddTag"),
         [],
         false,
-        async (tags) => {
-          await this.addTagsToSelected(tags);
-        }
+        (tags) => this.addTagsToSelected(tags)
       ).open();
     });
     const removeTag = bar.createEl("button", { text: this.plugin.t("libraryBulkRemoveTag") });
@@ -1643,9 +1654,7 @@ class WebClipLibraryView extends ItemView {
         this.plugin.t("libraryBulkRemoveTag"),
         [],
         false,
-        async (tags) => {
-          await this.removeTagsFromSelected(tags);
-        }
+        (tags) => this.removeTagsFromSelected(tags)
       ).open();
     });
     const move = bar.createEl("button", { text: this.plugin.t("libraryBulkMoveFolder") });
@@ -1656,9 +1665,7 @@ class WebClipLibraryView extends ItemView {
         this.items,
         this.plugin.t("libraryBulkMoveFolder"),
         this.getSelectedItem()?.folder || this.plugin.getDefaultTargetFolder(),
-        async (folder) => {
-          await this.moveSelected(folder);
-        }
+        (folder) => this.moveSelected(folder)
       ).open();
     });
     const clear = bar.createEl("button", { text: this.plugin.t("libraryBulkClear") });
@@ -1723,7 +1730,7 @@ class WebClipLibraryView extends ItemView {
     element.addEventListener("dragleave", () => {
       element.removeClass("is-drop-target");
     });
-    element.addEventListener("drop", async (event) => {
+    element.addEventListener("drop", (event) => {
       event.preventDefault();
       element.removeClass("is-drop-target");
       const path = event.dataTransfer?.getData("application/x-ishibashi-web-clip")
@@ -1732,9 +1739,9 @@ class WebClipLibraryView extends ItemView {
       const item = this.items.find((entry) => entry.file.path === path);
       if (!item) return;
       if (kind === "folder") {
-        await this.applyOrganization(item, value, item.tags);
+        void this.applyOrganization(item, value, item.tags);
       } else {
-        await this.addTags(item, [value]);
+        void this.addTags(item, [value]);
       }
     });
   }
@@ -1881,194 +1888,6 @@ class WebClipLibraryView extends ItemView {
   }
 }
 
-class WebClipEditModal extends Modal {
-  plugin: IshibashiWebClipper;
-  item: WebClipLibraryItem;
-  folder: string;
-  tagsText: string;
-  onSubmit: () => Promise<void>;
-  submitting: boolean;
-
-  constructor(app: any, plugin: IshibashiWebClipper, item: WebClipLibraryItem, onSubmit: () => Promise<void>) {
-    super(app);
-    this.plugin = plugin;
-    this.item = item;
-    this.folder = item.folder;
-    this.tagsText = item.tags.join("\n");
-    this.onSubmit = onSubmit;
-    this.submitting = false;
-  }
-
-  onOpen() {
-    this.render();
-  }
-
-  render() {
-    const { contentEl } = this;
-    contentEl.empty();
-    contentEl.addClass("ishibashi-web-clipper-edit");
-    contentEl.createEl("h2", { text: this.plugin.t("libraryEditTitle") });
-    contentEl.createEl("p", {
-      text: this.item.title || this.item.file.basename,
-      cls: "ishibashi-web-clipper-modal-help"
-    });
-
-    new Setting(contentEl)
-      .setName(this.plugin.t("fieldFolder"))
-      .setDesc(this.plugin.t("libraryEditFolderDesc"))
-      .addText((text) => {
-        text
-          .setValue(this.folder)
-          .onChange((value) => {
-            this.folder = normalizePath(value);
-          });
-      });
-
-    new Setting(contentEl)
-      .setName(this.plugin.t("fieldTags"))
-      .setDesc(this.plugin.t("libraryEditTagsDesc"))
-      .addTextArea((text) => {
-        text
-          .setValue(this.tagsText)
-          .onChange((value) => {
-            this.tagsText = value;
-          });
-        text.inputEl.rows = 7;
-      });
-
-    new Setting(contentEl)
-      .addButton((button) => {
-        button
-          .setButtonText(this.plugin.t("buttonCancel"))
-          .setDisabled(this.submitting)
-          .onClick(() => this.close());
-      })
-      .addButton((button) => {
-        button
-          .setCta()
-          .setButtonText(this.plugin.t("libraryEditApply"))
-          .setDisabled(this.submitting)
-          .onClick(async () => {
-            await this.apply();
-          });
-      });
-  }
-
-  async apply() {
-    if (this.submitting) return;
-    const folder = normalizePath(this.folder);
-    if (!folder) {
-      new Notice(this.plugin.t("libraryEditFolderRequired"));
-      return;
-    }
-
-    this.submitting = true;
-    this.render();
-    try {
-      await this.plugin.updateWebClipOrganization(this.item.file, folder, splitTags(this.tagsText));
-      new Notice(this.plugin.t("libraryEditComplete"));
-      this.close();
-      await this.onSubmit();
-    } catch (error) {
-      console.error(error);
-      new Notice(this.plugin.t("libraryEditFailed"));
-      this.submitting = false;
-      this.render();
-    }
-  }
-
-  onClose() {
-    this.contentEl.empty();
-  }
-}
-
-class WebClipTextInputModal extends Modal {
-  plugin: IshibashiWebClipper;
-  title: string;
-  description: string;
-  value: string;
-  onSubmit: (value: string) => Promise<void>;
-  submitting: boolean;
-
-  constructor(
-    app: any,
-    plugin: IshibashiWebClipper,
-    title: string,
-    description: string,
-    value: string,
-    onSubmit: (value: string) => Promise<void>
-  ) {
-    super(app);
-    this.plugin = plugin;
-    this.title = title;
-    this.description = description;
-    this.value = value;
-    this.onSubmit = onSubmit;
-    this.submitting = false;
-  }
-
-  onOpen() {
-    this.render();
-  }
-
-  render() {
-    const { contentEl } = this;
-    contentEl.empty();
-    contentEl.addClass("ishibashi-web-clipper-edit");
-    contentEl.createEl("h2", { text: this.title });
-    if (this.description) {
-      contentEl.createEl("p", {
-        text: this.description,
-        cls: "ishibashi-web-clipper-modal-help"
-      });
-    }
-    const input = contentEl.createEl("textarea", {
-      cls: "ishibashi-web-clipper-library-edit-tags"
-    });
-    input.value = this.value;
-    input.rows = 5;
-    input.addEventListener("input", () => {
-      this.value = input.value;
-    });
-
-    new Setting(contentEl)
-      .addButton((button) => {
-        button
-          .setButtonText(this.plugin.t("buttonCancel"))
-          .setDisabled(this.submitting)
-          .onClick(() => this.close());
-      })
-      .addButton((button) => {
-        button
-          .setCta()
-          .setButtonText(this.plugin.t("libraryEditApply"))
-          .setDisabled(this.submitting)
-          .onClick(async () => {
-            await this.apply();
-          });
-      });
-  }
-
-  async apply() {
-    if (this.submitting) return;
-    this.submitting = true;
-    this.render();
-    try {
-      await this.onSubmit(this.value);
-      this.close();
-    } catch (error) {
-      console.error(error);
-      new Notice(this.plugin.t("libraryEditFailed"));
-      this.submitting = false;
-      this.render();
-    }
-  }
-
-  onClose() {
-    this.contentEl.empty();
-  }
-}
-
 class WebClipTagPickerModal extends Modal {
   plugin: IshibashiWebClipper;
   items: WebClipLibraryItem[];
@@ -2076,17 +1895,17 @@ class WebClipTagPickerModal extends Modal {
   selected: Set<string>;
   replaceMode: boolean;
   query: string;
-  onSubmit: (tags: string[]) => Promise<void>;
+  onSubmit: (tags: string[]) => Promise<void> | void;
   submitting: boolean;
 
   constructor(
-    app: any,
+    app: App,
     plugin: IshibashiWebClipper,
     items: WebClipLibraryItem[],
     title: string,
     selectedTags: string[],
     replaceMode: boolean,
-    onSubmit: (tags: string[]) => Promise<void>
+    onSubmit: (tags: string[]) => Promise<void> | void
   ) {
     super(app);
     this.plugin = plugin;
@@ -2146,8 +1965,8 @@ class WebClipTagPickerModal extends Modal {
           .setCta()
           .setButtonText(this.plugin.t("libraryEditApply"))
           .setDisabled(this.submitting)
-          .onClick(async () => {
-            await this.apply();
+          .onClick(() => {
+            void this.apply();
           });
       });
   }
@@ -2163,7 +1982,7 @@ class WebClipTagPickerModal extends Modal {
     if (this.submitting) return;
     this.submitting = true;
     try {
-      await this.onSubmit(Array.from(this.selected));
+      await Promise.resolve(this.onSubmit(Array.from(this.selected)));
       this.close();
     } catch (error) {
       console.error(error);
@@ -2184,16 +2003,16 @@ class WebClipFolderPickerModal extends Modal {
   title: string;
   selectedFolder: string;
   query: string;
-  onSubmit: (folder: string) => Promise<void>;
+  onSubmit: (folder: string) => Promise<void> | void;
   submitting: boolean;
 
   constructor(
-    app: any,
+    app: App,
     plugin: IshibashiWebClipper,
     items: WebClipLibraryItem[],
     title: string,
     selectedFolder: string,
-    onSubmit: (folder: string) => Promise<void>
+    onSubmit: (folder: string) => Promise<void> | void
   ) {
     super(app);
     this.plugin = plugin;
@@ -2233,9 +2052,9 @@ class WebClipFolderPickerModal extends Modal {
           ? "ishibashi-web-clipper-picker-row is-active"
           : "ishibashi-web-clipper-picker-row"
       });
-      row.addEventListener("click", async () => {
+      row.addEventListener("click", () => {
         this.selectedFolder = folder;
-        await this.apply();
+        void this.apply();
       });
     }
 
@@ -2271,7 +2090,7 @@ class WebClipFolderPickerModal extends Modal {
     if (this.submitting) return;
     this.submitting = true;
     try {
-      await this.onSubmit(this.selectedFolder);
+      await Promise.resolve(this.onSubmit(this.selectedFolder));
       this.close();
     } catch (error) {
       console.error(error);
@@ -2293,7 +2112,7 @@ class WebClipMigrationModal extends Modal {
   scanned: boolean;
   applying: boolean;
 
-  constructor(app: any, plugin: IshibashiWebClipper) {
+  constructor(app: App, plugin: IshibashiWebClipper) {
     super(app);
     this.plugin = plugin;
     this.folder = plugin.getDefaultMigrationFolder();
@@ -2335,8 +2154,8 @@ class WebClipMigrationModal extends Modal {
       .addButton((button) => {
         button
           .setButtonText(this.plugin.t("migrationPreview"))
-          .onClick(async () => {
-            await this.preview();
+          .onClick(() => {
+            void this.preview();
           });
       })
       .addButton((button) => {
@@ -2344,8 +2163,8 @@ class WebClipMigrationModal extends Modal {
           .setCta()
           .setButtonText(this.plugin.t("migrationApply"))
           .setDisabled(!this.scanned || this.items.length === 0 || this.applying)
-          .onClick(async () => {
-            await this.apply();
+          .onClick(() => {
+            void this.apply();
           });
       });
 
@@ -2426,17 +2245,21 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
   bookmarkletCodeEl: HTMLElement | null = null;
   bookmarkletPlainEl: HTMLTextAreaElement | null = null;
 
-  constructor(app: any, plugin: IshibashiWebClipper) {
+  constructor(app: App, plugin: IshibashiWebClipper) {
     super(app, plugin);
     this.plugin = plugin;
   }
 
   display() {
+    this.renderSettings();
+  }
+
+  renderSettings() {
     const { containerEl } = this;
     containerEl.empty();
     containerEl.addClass("ishibashi-web-clipper-settings");
     const titleSetting = new Setting(containerEl)
-      .setName("Ishibashi Web Clipper")
+      .setName(this.plugin.t("settingsHeading"))
       .setHeading();
     titleSetting.settingEl.addClass("ishibashi-web-clipper-settings-title");
     containerEl.createEl("p", {
@@ -2469,7 +2292,7 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
             }
             await this.plugin.saveSettings();
             this.plugin.updateRibbonLabel();
-            this.display();
+            this.renderSettings();
           });
       });
 
@@ -2518,7 +2341,7 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
           .onClick(async () => {
             await this.plugin.applyFolderPreset();
             new Notice(this.plugin.t("noticeFolderPresetApplied"));
-            this.display();
+            this.renderSettings();
           });
       });
 
@@ -2550,7 +2373,7 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
         toggle.setValue(!!this.plugin.settings.addDomainTag).onChange(async (value) => {
           this.plugin.settings.addDomainTag = value;
           await this.plugin.saveSettings();
-          this.display();
+          this.renderSettings();
         });
       });
 
@@ -2561,7 +2384,7 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
         toggle.setValue(!!this.plugin.settings.addFolderTags).onChange(async (value) => {
           this.plugin.settings.addFolderTags = value;
           await this.plugin.saveSettings();
-          this.display();
+          this.renderSettings();
         });
       });
 
@@ -2769,9 +2592,10 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
       text: this.plugin.t("bookmarkletCopy"),
       cls: "ishibashi-web-clipper-copy-button"
     });
-    copy.addEventListener("click", async () => {
-      await navigator.clipboard.writeText(this.getBookmarkletCode());
-      new Notice(this.plugin.t("bookmarkletCopied"));
+    copy.addEventListener("click", () => {
+      void navigator.clipboard.writeText(this.getBookmarkletCode()).then(() => {
+        new Notice(this.plugin.t("bookmarkletCopied"));
+      });
     });
     this.bookmarkletPlainEl = guide.createEl("textarea", {
       text: this.getBookmarkletCode(),

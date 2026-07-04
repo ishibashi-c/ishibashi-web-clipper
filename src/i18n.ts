@@ -1,4 +1,6 @@
-const STRINGS = {
+type Language = "ja" | "en";
+
+const STRINGS: Record<Language, Record<string, string>> = {
   ja: {
     menuSaveClip: "ウェブクリップに保存",
     ribbonOpenLibrary: "Webクリップ管理ページを開く",
@@ -21,6 +23,7 @@ const STRINGS = {
     noticeFolderPresetApplied: "フォルダプリセットを作成しました。",
     noticeFolderPresetFailed: "初期設定は完了しましたが、フォルダプリセットを作成できませんでした。設定画面から再実行してください。",
     noticeSetupFailed: "初期設定を完了できませんでした。",
+    settingsHeading: "Webクリップ設定",
     firstRunDesc: "最初に表示言語を選んでください。Webクリップは未整理フォルダに保存され、後から整理できます。",
     firstRunPreset: "分類フォルダプリセットを作成する",
     firstRunPresetDesc: "webクリップ配下に 10_未整理、20_技術、30_ビジネス... のフォルダ構成を作成します。後から設定画面で追加することもできます。",
@@ -209,6 +212,7 @@ const STRINGS = {
     noticeFolderPresetApplied: "Created the folder preset.",
     noticeFolderPresetFailed: "Setup was completed, but the folder preset could not be created. Run it again from settings.",
     noticeSetupFailed: "Could not complete setup.",
+    settingsHeading: "Web clipper settings",
     firstRunDesc: "Choose your display language. Web clips are collected in an inbox folder so you can organize them later.",
     firstRunPreset: "Create the classification folder preset",
     firstRunPresetDesc: "Creates a folder structure under webclip, such as 10_Inbox, 20_Tech, and 30_Business. You can also add it later from settings.",
@@ -377,6 +381,6 @@ const STRINGS = {
   }
 };
 
-export function translate(language: "ja" | "en", key: string): string {
+export function translate(language: Language, key: string): string {
   return STRINGS[language]?.[key] || STRINGS.ja[key] || key;
 }

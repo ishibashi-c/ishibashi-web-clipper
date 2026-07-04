@@ -7,8 +7,21 @@ import {
   normalizePath
 } from "./utils";
 
-export function mergeSettings(saved): WebClipperSettings {
-  const settings = Object.assign({}, DEFAULT_SETTINGS, saved || {});
+type SavedSettings = Partial<WebClipperSettings> & {
+  fetchPageTitle?: boolean;
+};
+
+function isSavedSettings(value: unknown): value is SavedSettings {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+export function mergeSettings(saved: unknown): WebClipperSettings {
+  const savedSettings = isSavedSettings(saved) ? saved : {};
+  const settings = Object.assign(
+    {},
+    DEFAULT_SETTINGS,
+    savedSettings
+  ) as WebClipperSettings & { fetchPageTitle?: boolean };
   settings.setupCompleted = !!settings.setupCompleted;
   settings.language = settings.language === "en" ? "en" : "ja";
   settings.workflowMode = "inbox";
@@ -39,5 +52,5 @@ export function mergeSettings(saved): WebClipperSettings {
   settings.libraryInspectorWidth = normalizeLibraryPaneWidth(settings.libraryInspectorWidth, 220, 420, DEFAULT_SETTINGS.libraryInspectorWidth);
   settings.libraryGridColumns = normalizeGridColumns(settings.libraryGridColumns);
   settings.clipHistory = Array.isArray(settings.clipHistory) ? settings.clipHistory.slice(0, 100) : [];
-  return settings as WebClipperSettings;
+  return settings;
 }

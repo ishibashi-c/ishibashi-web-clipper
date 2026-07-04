@@ -1,13 +1,19 @@
-import { TFile, parseYaml } from "obsidian";
+import { App, FrontMatterCache, TFile, parseYaml, requestUrl } from "obsidian";
 import { DEFAULT_SETTINGS } from "./constants";
 import { WebClipLibraryItem, WebClipMetadata } from "./types";
 
-export function firstValue(value) {
+type FrontmatterData = Record<string, unknown>;
+
+function isRecord(value: unknown): value is FrontmatterData {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+export function firstValue(value: unknown): string {
   if (Array.isArray(value)) return value[0] || "";
   return String(value || "");
 }
 
-export function parseSharedText(text) {
+export function parseSharedText(text: unknown): { url: string; title: string; note: string } {
   const raw = String(text || "").trim();
   const url = extractFirstUrl(raw);
   if (!url) return { url: "", title: "", note: "" };
@@ -34,16 +40,16 @@ export function parseSharedText(text) {
   };
 }
 
-export function extractFirstUrl(text) {
+export function extractFirstUrl(text: unknown): string {
   const match = String(text || "").match(/https?:\/\/[^\s<>"'`]+/i);
   return match ? stripTrailingUrlPunctuation(match[0]) : "";
 }
 
-export function stripTrailingUrlPunctuation(url) {
+export function stripTrailingUrlPunctuation(url: unknown): string {
   return String(url || "").replace(/[),.。、，）]+$/g, "");
 }
 
-export function normalizeUrl(url) {
+export function normalizeUrl(url: unknown): string {
   try {
     const parsed = new URL(stripTrailingUrlPunctuation(url));
     if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return "";
@@ -53,7 +59,7 @@ export function normalizeUrl(url) {
   }
 }
 
-export function normalizeCacheKey(url) {
+export function normalizeCacheKey(url: string): string {
   try {
     const parsed = new URL(url);
     parsed.hash = "";
@@ -70,43 +76,43 @@ export function urlsMatch(left, right): boolean {
     || stripTrailingSlash(normalizedLeft) === stripTrailingSlash(normalizedRight);
 }
 
-export function getCachedFrontmatter(app: any, file: TFile): Record<string, any> | null {
+export function getCachedFrontmatter(app: App, file: TFile): FrontMatterCache | null {
   const frontmatter = app.metadataCache?.getFileCache(file)?.frontmatter;
   return frontmatter && typeof frontmatter === "object" ? frontmatter : null;
 }
 
-export function readFrontmatter(text): Record<string, any> | null {
+export function readFrontmatter(text: string): FrontmatterData | null {
   const match = String(text || "").match(/^---\s*\n([\s\S]*?)\n---(?:\n|$)/);
   if (!match) return null;
   try {
-    const value = parseYaml(match[1]);
-    return value && typeof value === "object" ? value : null;
+    const value = parseYaml(match[1]) as unknown;
+    return isRecord(value) ? value : null;
   } catch {
     return null;
   }
 }
 
-export function isWebClipFrontmatter(frontmatter: Record<string, any> | null): boolean {
+export function isWebClipFrontmatter(frontmatter: FrontmatterData | null): boolean {
   if (!frontmatter) return false;
   return frontmatter.type === "webclip" || !!frontmatterString(frontmatter.source);
 }
 
-export function isStrictWebClipFrontmatter(frontmatter: Record<string, any> | null): boolean {
+export function isStrictWebClipFrontmatter(frontmatter: FrontmatterData | null): boolean {
   return !!frontmatter && frontmatter.type === "webclip" && !!frontmatterString(frontmatter.source);
 }
 
-export function hasWebClipSource(frontmatter: Record<string, any> | null): boolean {
+export function hasWebClipSource(frontmatter: FrontmatterData | null): boolean {
   if (!frontmatter) return false;
   return frontmatter.type === "webclip" || !!frontmatterString(frontmatter.source);
 }
 
-export function frontmatterString(value): string {
+export function frontmatterString(value: unknown): string {
   if (Array.isArray(value)) return cleanText(value[0] || "");
   if (value === null || value === undefined) return "";
   return cleanText(String(value));
 }
 
-export function normalizeFrontmatterTags(value): string[] {
+export function normalizeFrontmatterTags(value: unknown): string[] {
   if (Array.isArray(value)) {
     return unique(value.map(normalizeTag).filter(Boolean));
   }
@@ -127,7 +133,7 @@ export function getParentPath(file: TFile): string {
   return index >= 0 ? file.path.slice(0, index) : "";
 }
 
-export function fallbackMetadata(url, sharedTitle) {
+export function fallbackMetadata(url: string, sharedTitle: string): WebClipMetadata {
   return cleanMetadata({
     url,
     title: cleanTitle(sharedTitle) || titleFromUrl(url),
@@ -162,18 +168,18 @@ export function parseOpenGraph(html: string): Record<string, string> {
   return tags;
 }
 
-export function getHtmlAttribute(tag, name) {
+export function getHtmlAttribute(tag: string, name: string): string {
   const re = new RegExp(`${name}\\s*=\\s*("([^"]*)"|'([^']*)'|([^\\s>]+))`, "i");
   const match = tag.match(re);
   return match ? (match[2] || match[3] || match[4] || "") : "";
 }
 
-export function parseHtmlTitle(html) {
+export function parseHtmlTitle(html: string): string {
   const match = String(html || "").match(/<title[^>]*>([\s\S]*?)<\/title>/i);
   return match ? decodeHtmlEntities(match[1]) : "";
 }
 
-export function absoluteUrl(value, baseUrl) {
+export function absoluteUrl(value: string, baseUrl: string): string {
   if (!value) return "";
   try {
     return new URL(value, baseUrl).toString();
@@ -182,7 +188,7 @@ export function absoluteUrl(value, baseUrl) {
   }
 }
 
-export function titleFromUrl(url) {
+export function titleFromUrl(url: string): string {
   try {
     const parsed = new URL(url);
     const path = decodeURIComponent(parsed.pathname.replace(/^\/+|\/+$/g, ""));
@@ -192,7 +198,7 @@ export function titleFromUrl(url) {
   }
 }
 
-export function readableHost(url) {
+export function readableHost(url: string): string {
   try {
     return new URL(url).hostname.replace(/^www\./, "");
   } catch {
@@ -200,23 +206,23 @@ export function readableHost(url) {
   }
 }
 
-export function domainFromUrl(url) {
+export function domainFromUrl(url: string): string {
   return readableHost(url).toLowerCase();
 }
 
-export function cleanTitle(value) {
+export function cleanTitle(value: unknown): string {
   return decodeHtmlEntities(value)
     .replace(/\s+/g, " ")
     .trim();
 }
 
-export function cleanText(value) {
+export function cleanText(value: unknown): string {
   return decodeHtmlEntities(value)
     .replace(/\s+/g, " ")
     .trim();
 }
 
-export function cleanMemo(value) {
+export function cleanMemo(value: unknown): string {
   return decodeHtmlEntities(value)
     .replace(/\r\n?/g, "\n")
     .split("\n")
@@ -226,11 +232,11 @@ export function cleanMemo(value) {
     .trim();
 }
 
-export function decodeProtocolText(value) {
+export function decodeProtocolText(value: unknown): string {
   return String(value || "").replace(/\+/g, " ");
 }
 
-export function decodeHtmlEntities(value) {
+export function decodeHtmlEntities(value: unknown): string {
   return String(value || "")
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
@@ -240,47 +246,48 @@ export function decodeHtmlEntities(value) {
     .replace(/&#x2F;/g, "/");
 }
 
-export function looksLikeUrl(value) {
+export function looksLikeUrl(value: unknown): boolean {
   return /^https?:\/\//i.test(String(value || "").trim());
 }
 
-export function normalizePath(path) {
+export function normalizePath(path: unknown): string {
   return String(path || "").trim().replace(/^\/+|\/+$/g, "");
 }
 
-export function sanitizeFileName(value) {
+export function sanitizeFileName(value: unknown): string {
   return String(value || "")
     .trim()
-    .replace(/[\\\/:*?"<>|#\[\]\n\r\t]/g, " ")
+    .replace(/[\\/:*?"<>|#\]\n\r\t]/g, " ")
+    .replace(/\[/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
 
-export function truncateFileName(value, maxLength) {
+export function truncateFileName(value: unknown, maxLength: number): string {
   const chars = Array.from(String(value || ""));
   if (chars.length <= maxLength) return chars.join("");
   return chars.slice(0, maxLength).join("").trim();
 }
 
-export function normalizeFileNameLength(value) {
-  const parsed = Number.parseInt(value, 10);
+export function normalizeFileNameLength(value: unknown): number {
+  const parsed = Number.parseInt(String(value), 10);
   if (!Number.isFinite(parsed)) return DEFAULT_SETTINGS.maxFileNameLength;
   return Math.max(20, Math.min(80, parsed));
 }
 
 export function normalizeLibraryPaneWidth(value, min: number, max: number, fallback: number): number {
-  const parsed = Number.parseInt(value, 10);
+  const parsed = Number.parseInt(String(value), 10);
   if (!Number.isFinite(parsed)) return fallback;
   return Math.max(min, Math.min(max, parsed));
 }
 
 export function normalizeGridColumns(value): number {
-  const parsed = Number.parseInt(value, 10);
+  const parsed = Number.parseInt(String(value), 10);
   if (!Number.isFinite(parsed)) return DEFAULT_SETTINGS.libraryGridColumns;
   return Math.max(1, Math.min(3, parsed));
 }
 
-export function tagsFromFolderPath(path) {
+export function tagsFromFolderPath(path: string): string[] {
   return normalizePath(path)
     .split("/")
     .filter(Boolean)
@@ -310,12 +317,13 @@ export function splitTags(value: string): string[] {
     .filter(Boolean));
 }
 
-export function normalizeTag(value) {
+export function normalizeTag(value: unknown): string {
   return String(value || "")
     .trim()
     .replace(/^#+/, "")
     .replace(/[#[\]\n\r\t]/g, " ")
-    .replace(/[\\\/]/g, "-")
+    .replace(/\\/g, "-")
+    .replace(/\//g, "-")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -335,7 +343,7 @@ export function formatLibraryDate(value: string): string {
   return window.moment(parsed).format("YYYY/MM/DD HH:mm");
 }
 
-export function shortHash(value) {
+export function shortHash(value: unknown): string {
   let hash = 0;
   const text = String(value || "");
   for (let i = 0; i < text.length; i += 1) {
@@ -359,19 +367,9 @@ export function shouldResolveSharedRedirect(url: string): boolean {
 }
 
 export async function resolveFetchFinalUrl(url: string, timeoutMs: number): Promise<string> {
-  if (typeof fetch !== "function") return "";
-  const controller = new AbortController();
-  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const response = await fetch(url, {
-      method: "GET",
-      redirect: "follow",
-      signal: controller.signal
-    });
-    return normalizeUrl(response.url || "");
-  } finally {
-    window.clearTimeout(timer);
-  }
+  const response = await withTimeout(requestUrl({ url, method: "GET", throw: false }), timeoutMs);
+  const location = response.headers.location || response.headers.Location || "";
+  return location ? normalizeUrl(absoluteUrl(location, url)) : "";
 }
 
 export function inferCreatedAt(createdAt: string, created: string, file: TFile): string {
@@ -391,11 +389,11 @@ export function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<
     }, timeoutMs);
     promise
       .then((value) => resolve(value))
-      .catch((error) => reject(error))
+      .catch((error: unknown) => reject(error instanceof Error ? error : new Error(String(error))))
       .finally(() => window.clearTimeout(timer));
   });
 }
 
-export function stripTrailingSlash(value) {
+export function stripTrailingSlash(value: unknown): string {
   return String(value || "").replace(/\/$/, "");
 }
