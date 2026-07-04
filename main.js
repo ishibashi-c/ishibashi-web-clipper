@@ -976,7 +976,7 @@ var IshibashiWebClipper = class extends import_obsidian2.Plugin {
   getFolderPreset(language = this.settings.language) {
     return getWebClipFolderPreset(language);
   }
-  async applyFolderPreset(language = this.settings.language) {
+  async applyFolderPreset(language = this.settings.language, save = true) {
     const preset = this.getFolderPreset(language);
     for (const folder of preset.folders) {
       await this.ensureFolder(folder);
@@ -985,7 +985,9 @@ var IshibashiWebClipper = class extends import_obsidian2.Plugin {
     this.settings.inboxFolder = preset.inbox;
     this.settings.targetFolder = preset.root;
     this.settings.migrationTargetFolder = preset.root;
-    await this.saveSettings();
+    if (save) {
+      await this.saveSettings();
+    }
   }
   async resolveMetadata(url, sharedTitle) {
     const fallback = fallbackMetadata(url, sharedTitle);
@@ -1343,7 +1345,7 @@ var FirstRunModal = class extends import_obsidian2.Modal {
         this.plugin.settings.language = this.language;
         this.plugin.settings.workflowMode = "inbox";
         if (this.createPreset) {
-          await this.plugin.applyFolderPreset(this.language);
+          await this.plugin.applyFolderPreset(this.language, false);
         } else {
           this.plugin.settings.inboxFolder = preset.inbox;
           this.plugin.settings.targetFolder = preset.root;

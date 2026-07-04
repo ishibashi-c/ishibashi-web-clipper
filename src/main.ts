@@ -309,7 +309,7 @@ export default class IshibashiWebClipper extends Plugin {
     return getWebClipFolderPreset(language);
   }
 
-  async applyFolderPreset(language: "ja" | "en" = this.settings.language) {
+  async applyFolderPreset(language: "ja" | "en" = this.settings.language, save = true) {
     const preset = this.getFolderPreset(language);
     for (const folder of preset.folders) {
       await this.ensureFolder(folder);
@@ -318,7 +318,9 @@ export default class IshibashiWebClipper extends Plugin {
     this.settings.inboxFolder = preset.inbox;
     this.settings.targetFolder = preset.root;
     this.settings.migrationTargetFolder = preset.root;
-    await this.saveSettings();
+    if (save) {
+      await this.saveSettings();
+    }
   }
 
   async resolveMetadata(url: string, sharedTitle: string): Promise<WebClipMetadata> {
@@ -770,7 +772,7 @@ class FirstRunModal extends Modal {
             this.plugin.settings.language = this.language;
             this.plugin.settings.workflowMode = "inbox";
             if (this.createPreset) {
-              await this.plugin.applyFolderPreset(this.language);
+              await this.plugin.applyFolderPreset(this.language, false);
             } else {
               this.plugin.settings.inboxFolder = preset.inbox;
               this.plugin.settings.targetFolder = preset.root;
