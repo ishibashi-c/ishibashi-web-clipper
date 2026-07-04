@@ -309,11 +309,16 @@ export default class IshibashiWebClipper extends Plugin {
     return getWebClipFolderPreset(language);
   }
 
-  async applyFolderPreset(language: "ja" | "en" = this.settings.language, save = true) {
+  async ensureFolderPresetFolders(language: "ja" | "en" = this.settings.language) {
     const preset = this.getFolderPreset(language);
     for (const folder of preset.folders) {
       await this.ensureFolder(folder);
     }
+  }
+
+  async applyFolderPreset(language: "ja" | "en" = this.settings.language, save = true) {
+    const preset = this.getFolderPreset(language);
+    await this.ensureFolderPresetFolders(language);
     this.settings.workflowMode = "inbox";
     this.settings.inboxFolder = preset.inbox;
     this.settings.targetFolder = preset.root;
@@ -720,12 +725,14 @@ class FirstRunModal extends Modal {
   plugin: IshibashiWebClipper;
   language: "ja" | "en";
   createPreset: boolean;
+  starting: boolean;
 
   constructor(app: any, plugin: IshibashiWebClipper) {
     super(app);
     this.plugin = plugin;
     this.language = plugin.settings.language || "ja";
     this.createPreset = false;
+    this.starting = false;
   }
 
   onOpen() {
@@ -768,21 +775,36 @@ class FirstRunModal extends Modal {
           .setCta()
           .setButtonText(translate(this.language, "firstRunStart"))
           .onClick(async () => {
-            const preset = this.plugin.getFolderPreset(this.language);
-            this.plugin.settings.language = this.language;
-            this.plugin.settings.workflowMode = "inbox";
-            if (this.createPreset) {
-              await this.plugin.applyFolderPreset(this.language, false);
-            } else {
+            if (this.starting) return;
+            this.starting = true;
+            button.setDisabled(true);
+            try {
+              const preset = this.plugin.getFolderPreset(this.language);
+              this.plugin.settings.language = this.language;
+              this.plugin.settings.workflowMode = "inbox";
               this.plugin.settings.inboxFolder = preset.inbox;
               this.plugin.settings.targetFolder = preset.root;
               this.plugin.settings.migrationTargetFolder = preset.root;
+              this.plugin.settings.confirmBeforeSave = false;
+              this.plugin.settings.fixedTags = this.plugin.getDefaultFixedTags(this.language);
+              this.plugin.settings.setupCompleted = true;
+              await this.plugin.saveSettings();
+
+              if (this.createPreset) {
+                try {
+                  await this.plugin.ensureFolderPresetFolders(this.language);
+                } catch (error) {
+                  console.error("Failed to create web clip folder preset.", error);
+                  new Notice(translate(this.language, "noticeFolderPresetFailed"));
+                }
+              }
+              this.close();
+            } catch (error) {
+              this.starting = false;
+              button.setDisabled(false);
+              console.error("Failed to complete Ishibashi Web Clipper setup.", error);
+              new Notice(translate(this.language, "noticeSetupFailed"));
             }
-            this.plugin.settings.confirmBeforeSave = false;
-            this.plugin.settings.fixedTags = this.plugin.getDefaultFixedTags(this.language);
-            this.plugin.settings.setupCompleted = true;
-            await this.plugin.saveSettings();
-            this.close();
           });
       });
   }

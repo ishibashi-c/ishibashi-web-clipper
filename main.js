@@ -101,6 +101,8 @@ var STRINGS = {
     noticeCreated: "\u30A6\u30A7\u30D6\u30AF\u30EA\u30C3\u30D7\u3092\u4F5C\u6210\u3057\u307E\u3057\u305F",
     noticeTargetFolder: "\u4FDD\u5B58\u5148",
     noticeFolderPresetApplied: "\u30D5\u30A9\u30EB\u30C0\u30D7\u30EA\u30BB\u30C3\u30C8\u3092\u4F5C\u6210\u3057\u307E\u3057\u305F\u3002",
+    noticeFolderPresetFailed: "\u521D\u671F\u8A2D\u5B9A\u306F\u5B8C\u4E86\u3057\u307E\u3057\u305F\u304C\u3001\u30D5\u30A9\u30EB\u30C0\u30D7\u30EA\u30BB\u30C3\u30C8\u3092\u4F5C\u6210\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002\u8A2D\u5B9A\u753B\u9762\u304B\u3089\u518D\u5B9F\u884C\u3057\u3066\u304F\u3060\u3055\u3044\u3002",
+    noticeSetupFailed: "\u521D\u671F\u8A2D\u5B9A\u3092\u5B8C\u4E86\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002",
     firstRunDesc: "\u6700\u521D\u306B\u8868\u793A\u8A00\u8A9E\u3092\u9078\u3093\u3067\u304F\u3060\u3055\u3044\u3002Web\u30AF\u30EA\u30C3\u30D7\u306F\u672A\u6574\u7406\u30D5\u30A9\u30EB\u30C0\u306B\u4FDD\u5B58\u3055\u308C\u3001\u5F8C\u304B\u3089\u6574\u7406\u3067\u304D\u307E\u3059\u3002",
     firstRunPreset: "\u5206\u985E\u30D5\u30A9\u30EB\u30C0\u30D7\u30EA\u30BB\u30C3\u30C8\u3092\u4F5C\u6210\u3059\u308B",
     firstRunPresetDesc: "web\u30AF\u30EA\u30C3\u30D7\u914D\u4E0B\u306B 10_\u672A\u6574\u7406\u300120_\u6280\u8853\u300130_\u30D3\u30B8\u30CD\u30B9... \u306E\u30D5\u30A9\u30EB\u30C0\u69CB\u6210\u3092\u4F5C\u6210\u3057\u307E\u3059\u3002\u5F8C\u304B\u3089\u8A2D\u5B9A\u753B\u9762\u3067\u8FFD\u52A0\u3059\u308B\u3053\u3068\u3082\u3067\u304D\u307E\u3059\u3002",
@@ -287,6 +289,8 @@ var STRINGS = {
     noticeCreated: "Created web clip",
     noticeTargetFolder: "Destination",
     noticeFolderPresetApplied: "Created the folder preset.",
+    noticeFolderPresetFailed: "Setup was completed, but the folder preset could not be created. Run it again from settings.",
+    noticeSetupFailed: "Could not complete setup.",
     firstRunDesc: "Choose your display language. Web clips are collected in an inbox folder so you can organize them later.",
     firstRunPreset: "Create the classification folder preset",
     firstRunPresetDesc: "Creates a folder structure under webclip, such as 10_Inbox, 20_Tech, and 30_Business. You can also add it later from settings.",
@@ -976,11 +980,15 @@ var IshibashiWebClipper = class extends import_obsidian2.Plugin {
   getFolderPreset(language = this.settings.language) {
     return getWebClipFolderPreset(language);
   }
-  async applyFolderPreset(language = this.settings.language, save = true) {
+  async ensureFolderPresetFolders(language = this.settings.language) {
     const preset = this.getFolderPreset(language);
     for (const folder of preset.folders) {
       await this.ensureFolder(folder);
     }
+  }
+  async applyFolderPreset(language = this.settings.language, save = true) {
+    const preset = this.getFolderPreset(language);
+    await this.ensureFolderPresetFolders(language);
     this.settings.workflowMode = "inbox";
     this.settings.inboxFolder = preset.inbox;
     this.settings.targetFolder = preset.root;
@@ -1319,6 +1327,7 @@ var FirstRunModal = class extends import_obsidian2.Modal {
     this.plugin = plugin;
     this.language = plugin.settings.language || "ja";
     this.createPreset = false;
+    this.starting = false;
   }
   onOpen() {
     const { contentEl } = this;
@@ -1341,21 +1350,35 @@ var FirstRunModal = class extends import_obsidian2.Modal {
     });
     new import_obsidian2.Setting(contentEl).addButton((button) => {
       button.setCta().setButtonText(translate(this.language, "firstRunStart")).onClick(async () => {
-        const preset = this.plugin.getFolderPreset(this.language);
-        this.plugin.settings.language = this.language;
-        this.plugin.settings.workflowMode = "inbox";
-        if (this.createPreset) {
-          await this.plugin.applyFolderPreset(this.language, false);
-        } else {
+        if (this.starting) return;
+        this.starting = true;
+        button.setDisabled(true);
+        try {
+          const preset = this.plugin.getFolderPreset(this.language);
+          this.plugin.settings.language = this.language;
+          this.plugin.settings.workflowMode = "inbox";
           this.plugin.settings.inboxFolder = preset.inbox;
           this.plugin.settings.targetFolder = preset.root;
           this.plugin.settings.migrationTargetFolder = preset.root;
+          this.plugin.settings.confirmBeforeSave = false;
+          this.plugin.settings.fixedTags = this.plugin.getDefaultFixedTags(this.language);
+          this.plugin.settings.setupCompleted = true;
+          await this.plugin.saveSettings();
+          if (this.createPreset) {
+            try {
+              await this.plugin.ensureFolderPresetFolders(this.language);
+            } catch (error) {
+              console.error("Failed to create web clip folder preset.", error);
+              new import_obsidian2.Notice(translate(this.language, "noticeFolderPresetFailed"));
+            }
+          }
+          this.close();
+        } catch (error) {
+          this.starting = false;
+          button.setDisabled(false);
+          console.error("Failed to complete Ishibashi Web Clipper setup.", error);
+          new import_obsidian2.Notice(translate(this.language, "noticeSetupFailed"));
         }
-        this.plugin.settings.confirmBeforeSave = false;
-        this.plugin.settings.fixedTags = this.plugin.getDefaultFixedTags(this.language);
-        this.plugin.settings.setupCompleted = true;
-        await this.plugin.saveSettings();
-        this.close();
       });
     });
   }
