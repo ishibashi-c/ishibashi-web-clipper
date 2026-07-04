@@ -1610,12 +1610,14 @@ var WebClipLibraryView = class extends import_obsidian2.ItemView {
   }
   applyLayoutColumns(layout) {
     if (this.contentEl.hasClass("is-compact")) {
-      layout.style.gridTemplateColumns = "";
+      layout.setCssStyles({ gridTemplateColumns: "" });
       return;
     }
     const sidebarWidth = normalizeLibraryPaneWidth(this.plugin.settings.librarySidebarWidth, 220, 420, DEFAULT_SETTINGS.librarySidebarWidth);
     const inspectorWidth = normalizeLibraryPaneWidth(this.plugin.settings.libraryInspectorWidth, 220, 420, DEFAULT_SETTINGS.libraryInspectorWidth);
-    layout.style.gridTemplateColumns = `${sidebarWidth}px 10px minmax(420px, 1fr) 10px ${inspectorWidth}px`;
+    layout.setCssStyles({
+      gridTemplateColumns: `${sidebarWidth}px 10px minmax(420px, 1fr) 10px ${inspectorWidth}px`
+    });
   }
   updateCompactClass() {
     const shouldCompact = this.contentEl.clientWidth > 0 && this.contentEl.clientWidth < 860;
@@ -2109,7 +2111,9 @@ var WebClipLibraryView = class extends import_obsidian2.ItemView {
   }
   addSegment(container, options, active, onChange) {
     const segment = container.createDiv({ cls: "ishibashi-web-clipper-library-segment" });
-    segment.style.gridTemplateColumns = `repeat(${options.length}, minmax(0, 1fr))`;
+    segment.setCssStyles({
+      gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))`
+    });
     for (const option of options) {
       const button = segment.createEl("button", {
         text: option.label,
@@ -2544,7 +2548,8 @@ var IshibashiWebClipperSettingTab = class extends import_obsidian2.PluginSetting
     const { containerEl } = this;
     containerEl.empty();
     containerEl.addClass("ishibashi-web-clipper-settings");
-    containerEl.createEl("h2", { text: "Ishibashi Web Clipper" });
+    const titleSetting = new import_obsidian2.Setting(containerEl).setName("Ishibashi Web Clipper").setHeading();
+    titleSetting.settingEl.addClass("ishibashi-web-clipper-settings-title");
     containerEl.createEl("p", {
       text: this.plugin.t("settingsIntro"),
       cls: "ishibashi-web-clipper-settings-intro"
@@ -2706,10 +2711,8 @@ var IshibashiWebClipperSettingTab = class extends import_obsidian2.PluginSetting
   }
   createSection(containerEl, title, description) {
     const section = containerEl.createDiv({ cls: "ishibashi-web-clipper-settings-section" });
-    section.createEl("h3", {
-      text: title,
-      cls: "ishibashi-web-clipper-settings-section-title"
-    });
+    const heading = new import_obsidian2.Setting(section).setName(title).setHeading();
+    heading.settingEl.addClass("ishibashi-web-clipper-settings-section-title");
     section.createEl("p", {
       text: description,
       cls: "ishibashi-web-clipper-settings-section-desc"
@@ -2718,10 +2721,8 @@ var IshibashiWebClipperSettingTab = class extends import_obsidian2.PluginSetting
   }
   createSummary(containerEl) {
     const summary = containerEl.createDiv({ cls: "ishibashi-web-clipper-settings-summary" });
-    summary.createEl("h3", {
-      text: this.plugin.t("summaryHeading"),
-      cls: "ishibashi-web-clipper-settings-summary-title"
-    });
+    const heading = new import_obsidian2.Setting(summary).setName(this.plugin.t("summaryHeading")).setHeading();
+    heading.settingEl.addClass("ishibashi-web-clipper-settings-summary-title");
     const grid = summary.createDiv({ cls: "ishibashi-web-clipper-settings-summary-grid" });
     this.addSummaryItem(grid, this.plugin.t("summaryDestination"), this.getDestinationSummary());
     this.addSummaryItem(grid, this.plugin.t("summaryTags"), this.getTagsSummary());
@@ -2729,10 +2730,8 @@ var IshibashiWebClipperSettingTab = class extends import_obsidian2.PluginSetting
   }
   createCaptureGuide(containerEl) {
     const guide = containerEl.createDiv({ cls: "ishibashi-web-clipper-settings-guide" });
-    guide.createEl("h3", {
-      text: this.plugin.t("captureGuideHeading"),
-      cls: "ishibashi-web-clipper-settings-summary-title"
-    });
+    const heading = new import_obsidian2.Setting(guide).setName(this.plugin.t("captureGuideHeading")).setHeading();
+    heading.settingEl.addClass("ishibashi-web-clipper-settings-summary-title");
     const grid = guide.createDiv({ cls: "ishibashi-web-clipper-settings-guide-grid" });
     this.addGuideItem(
       grid,
@@ -2744,10 +2743,8 @@ var IshibashiWebClipperSettingTab = class extends import_obsidian2.PluginSetting
       this.plugin.t("captureGuideDesktopTitle"),
       this.plugin.t("captureGuideDesktopDesc")
     );
-    guide.createEl("h4", {
-      text: this.plugin.t("bookmarkletStepsTitle"),
-      cls: "ishibashi-web-clipper-subheading"
-    });
+    const stepsHeading = new import_obsidian2.Setting(guide).setName(this.plugin.t("bookmarkletStepsTitle")).setHeading();
+    stepsHeading.settingEl.addClass("ishibashi-web-clipper-subheading");
     const steps = guide.createEl("ol", {
       cls: "ishibashi-web-clipper-steps"
     });

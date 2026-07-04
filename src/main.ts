@@ -1120,12 +1120,14 @@ class WebClipLibraryView extends ItemView {
 
   applyLayoutColumns(layout: HTMLElement) {
     if (this.contentEl.hasClass("is-compact")) {
-      layout.style.gridTemplateColumns = "";
+      layout.setCssStyles({ gridTemplateColumns: "" });
       return;
     }
     const sidebarWidth = normalizeLibraryPaneWidth(this.plugin.settings.librarySidebarWidth, 220, 420, DEFAULT_SETTINGS.librarySidebarWidth);
     const inspectorWidth = normalizeLibraryPaneWidth(this.plugin.settings.libraryInspectorWidth, 220, 420, DEFAULT_SETTINGS.libraryInspectorWidth);
-    layout.style.gridTemplateColumns = `${sidebarWidth}px 10px minmax(420px, 1fr) 10px ${inspectorWidth}px`;
+    layout.setCssStyles({
+      gridTemplateColumns: `${sidebarWidth}px 10px minmax(420px, 1fr) 10px ${inspectorWidth}px`
+    });
   }
 
   updateCompactClass() {
@@ -1673,7 +1675,9 @@ class WebClipLibraryView extends ItemView {
     onChange: (value: string) => void
   ) {
     const segment = container.createDiv({ cls: "ishibashi-web-clipper-library-segment" });
-    segment.style.gridTemplateColumns = `repeat(${options.length}, minmax(0, 1fr))`;
+    segment.setCssStyles({
+      gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))`
+    });
     for (const option of options) {
       const button = segment.createEl("button", {
         text: option.label,
@@ -2431,7 +2435,10 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
     containerEl.addClass("ishibashi-web-clipper-settings");
-    containerEl.createEl("h2", { text: "Ishibashi Web Clipper" });
+    const titleSetting = new Setting(containerEl)
+      .setName("Ishibashi Web Clipper")
+      .setHeading();
+    titleSetting.settingEl.addClass("ishibashi-web-clipper-settings-title");
     containerEl.createEl("p", {
       text: this.plugin.t("settingsIntro"),
       cls: "ishibashi-web-clipper-settings-intro"
@@ -2693,10 +2700,10 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
 
   createSection(containerEl: HTMLElement, title: string, description: string): HTMLElement {
     const section = containerEl.createDiv({ cls: "ishibashi-web-clipper-settings-section" });
-    section.createEl("h3", {
-      text: title,
-      cls: "ishibashi-web-clipper-settings-section-title"
-    });
+    const heading = new Setting(section)
+      .setName(title)
+      .setHeading();
+    heading.settingEl.addClass("ishibashi-web-clipper-settings-section-title");
     section.createEl("p", {
       text: description,
       cls: "ishibashi-web-clipper-settings-section-desc"
@@ -2706,10 +2713,10 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
 
   createSummary(containerEl: HTMLElement) {
     const summary = containerEl.createDiv({ cls: "ishibashi-web-clipper-settings-summary" });
-    summary.createEl("h3", {
-      text: this.plugin.t("summaryHeading"),
-      cls: "ishibashi-web-clipper-settings-summary-title"
-    });
+    const heading = new Setting(summary)
+      .setName(this.plugin.t("summaryHeading"))
+      .setHeading();
+    heading.settingEl.addClass("ishibashi-web-clipper-settings-summary-title");
     const grid = summary.createDiv({ cls: "ishibashi-web-clipper-settings-summary-grid" });
     this.addSummaryItem(grid, this.plugin.t("summaryDestination"), this.getDestinationSummary());
     this.addSummaryItem(grid, this.plugin.t("summaryTags"), this.getTagsSummary());
@@ -2718,10 +2725,10 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
 
   createCaptureGuide(containerEl: HTMLElement) {
     const guide = containerEl.createDiv({ cls: "ishibashi-web-clipper-settings-guide" });
-    guide.createEl("h3", {
-      text: this.plugin.t("captureGuideHeading"),
-      cls: "ishibashi-web-clipper-settings-summary-title"
-    });
+    const heading = new Setting(guide)
+      .setName(this.plugin.t("captureGuideHeading"))
+      .setHeading();
+    heading.settingEl.addClass("ishibashi-web-clipper-settings-summary-title");
     const grid = guide.createDiv({ cls: "ishibashi-web-clipper-settings-guide-grid" });
     this.addGuideItem(
       grid,
@@ -2733,10 +2740,10 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
       this.plugin.t("captureGuideDesktopTitle"),
       this.plugin.t("captureGuideDesktopDesc")
     );
-    guide.createEl("h4", {
-      text: this.plugin.t("bookmarkletStepsTitle"),
-      cls: "ishibashi-web-clipper-subheading"
-    });
+    const stepsHeading = new Setting(guide)
+      .setName(this.plugin.t("bookmarkletStepsTitle"))
+      .setHeading();
+    stepsHeading.settingEl.addClass("ishibashi-web-clipper-subheading");
     const steps = guide.createEl("ol", {
       cls: "ishibashi-web-clipper-steps"
     });
