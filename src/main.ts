@@ -91,6 +91,7 @@ type PartialClipInput = {
 export default class IshibashiWebClipper extends Plugin {
   settings: WebClipperSettings;
   ribbonIconEl: HTMLElement | null = null;
+  private saveQueue: Promise<void> = Promise.resolve();
 
   async onload() {
     this.settings = mergeSettings(await this.loadData());
@@ -182,7 +183,10 @@ export default class IshibashiWebClipper extends Plugin {
   }
 
   async saveSettings() {
-    await this.saveData(this.settings);
+    this.saveQueue = this.saveQueue
+      .catch(() => undefined)
+      .then(() => this.saveData({ ...this.settings }));
+    await this.saveQueue;
   }
 
   updateRibbonLabel() {
@@ -331,13 +335,19 @@ export default class IshibashiWebClipper extends Plugin {
     }
   }
 
-  async applyFolderPreset(language: "ja" | "en" = this.settings.language, save = true) {
+  async applyFolderPreset(language: "ja" | "en" = this.settings.language, save = true, preserveDestination = true) {
     const preset = this.getFolderPreset(language);
     await this.ensureFolderPresetFolders(language);
     this.settings.workflowMode = "inbox";
-    this.settings.inboxFolder = preset.inbox;
-    this.settings.targetFolder = preset.root;
-    this.settings.migrationTargetFolder = preset.root;
+    if (!preserveDestination || !normalizePath(this.settings.inboxFolder)) {
+      this.settings.inboxFolder = preset.inbox;
+    }
+    if (!preserveDestination || !normalizePath(this.settings.targetFolder)) {
+      this.settings.targetFolder = preset.root;
+    }
+    if (!preserveDestination || !normalizePath(this.settings.migrationTargetFolder)) {
+      this.settings.migrationTargetFolder = preset.root;
+    }
     if (save) {
       await this.saveSettings();
     }

@@ -774,12 +774,8 @@ function mergeSettings(saved) {
   settings.targetFolder = normalizePath(settings.targetFolder || DEFAULT_SETTINGS.targetFolder);
   settings.inboxFolder = normalizePath(settings.inboxFolder || DEFAULT_SETTINGS.inboxFolder);
   const languagePreset = getWebClipFolderPreset(settings.language);
-  if (settings.inboxFolder === "08_Web\u30AF\u30EA\u30C3\u30D7/10_\u672A\u6574\u7406" || settings.inboxFolder === "Web Clips/10_\u672A\u6574\u7406") {
-    settings.inboxFolder = languagePreset.inbox;
-    settings.targetFolder = languagePreset.root;
-  }
   settings.migrationTargetFolder = normalizePath(settings.migrationTargetFolder || languagePreset.root || DEFAULT_SETTINGS.migrationTargetFolder);
-  if (settings.migrationTargetFolder === "08_Web\u30AF\u30EA\u30C3\u30D7/10_\u672A\u6574\u7406" || settings.migrationTargetFolder === "Web Clips/10_\u672A\u6574\u7406" || settings.migrationTargetFolder === languagePreset.inbox) {
+  if (settings.migrationTargetFolder === languagePreset.inbox) {
     settings.migrationTargetFolder = languagePreset.root || DEFAULT_SETTINGS.migrationTargetFolder;
   }
   settings.browserVaultName = String(settings.browserVaultName || "");
@@ -804,6 +800,7 @@ var IshibashiWebClipper = class extends import_obsidian2.Plugin {
   constructor() {
     super(...arguments);
     this.ribbonIconEl = null;
+    this.saveQueue = Promise.resolve();
   }
   async onload() {
     this.settings = mergeSettings(await this.loadData());
@@ -876,7 +873,8 @@ var IshibashiWebClipper = class extends import_obsidian2.Plugin {
     }
   }
   async saveSettings() {
-    await this.saveData(this.settings);
+    this.saveQueue = this.saveQueue.catch(() => void 0).then(() => this.saveData({ ...this.settings }));
+    await this.saveQueue;
   }
   updateRibbonLabel() {
     if (!this.ribbonIconEl) return;
@@ -991,13 +989,19 @@ var IshibashiWebClipper = class extends import_obsidian2.Plugin {
       await this.ensureFolder(folder);
     }
   }
-  async applyFolderPreset(language = this.settings.language, save = true) {
+  async applyFolderPreset(language = this.settings.language, save = true, preserveDestination = true) {
     const preset = this.getFolderPreset(language);
     await this.ensureFolderPresetFolders(language);
     this.settings.workflowMode = "inbox";
-    this.settings.inboxFolder = preset.inbox;
-    this.settings.targetFolder = preset.root;
-    this.settings.migrationTargetFolder = preset.root;
+    if (!preserveDestination || !normalizePath(this.settings.inboxFolder)) {
+      this.settings.inboxFolder = preset.inbox;
+    }
+    if (!preserveDestination || !normalizePath(this.settings.targetFolder)) {
+      this.settings.targetFolder = preset.root;
+    }
+    if (!preserveDestination || !normalizePath(this.settings.migrationTargetFolder)) {
+      this.settings.migrationTargetFolder = preset.root;
+    }
     if (save) {
       await this.saveSettings();
     }

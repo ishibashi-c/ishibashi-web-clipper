@@ -28,14 +28,8 @@ export function mergeSettings(saved: unknown): WebClipperSettings {
   settings.targetFolder = normalizePath(settings.targetFolder || DEFAULT_SETTINGS.targetFolder);
   settings.inboxFolder = normalizePath(settings.inboxFolder || DEFAULT_SETTINGS.inboxFolder);
   const languagePreset = getWebClipFolderPreset(settings.language);
-  if (settings.inboxFolder === "08_Webクリップ/10_未整理" || settings.inboxFolder === "Web Clips/10_未整理") {
-    settings.inboxFolder = languagePreset.inbox;
-    settings.targetFolder = languagePreset.root;
-  }
   settings.migrationTargetFolder = normalizePath(settings.migrationTargetFolder || languagePreset.root || DEFAULT_SETTINGS.migrationTargetFolder);
-  if (settings.migrationTargetFolder === "08_Webクリップ/10_未整理"
-    || settings.migrationTargetFolder === "Web Clips/10_未整理"
-    || settings.migrationTargetFolder === languagePreset.inbox) {
+  if (settings.migrationTargetFolder === languagePreset.inbox) {
     settings.migrationTargetFolder = languagePreset.root || DEFAULT_SETTINGS.migrationTargetFolder;
   }
   settings.browserVaultName = String(settings.browserVaultName || "");
