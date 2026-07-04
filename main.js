@@ -1467,8 +1467,9 @@ var ClipHistoryView = class extends import_obsidian2.ItemView {
   getIcon() {
     return "history";
   }
-  async onOpen() {
+  onOpen() {
     this.render();
+    return Promise.resolve();
   }
   render() {
     const container = this.contentEl;
@@ -1531,10 +1532,10 @@ var WebClipLibraryView = class extends import_obsidian2.ItemView {
   getIcon() {
     return "library";
   }
-  async onOpen() {
+  onOpen() {
     this.resizeObserver = new ResizeObserver(() => this.updateCompactClass());
     this.resizeObserver.observe(this.contentEl);
-    await this.load();
+    return this.load();
   }
   async onClose() {
     this.resizeObserver?.disconnect();

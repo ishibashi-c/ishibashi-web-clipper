@@ -943,8 +943,9 @@ class ClipHistoryView extends ItemView {
     return "history";
   }
 
-  async onOpen() {
+  onOpen(): Promise<void> {
     this.render();
+    return Promise.resolve();
   }
 
   render() {
@@ -1034,10 +1035,10 @@ class WebClipLibraryView extends ItemView {
     return "library";
   }
 
-  async onOpen() {
+  onOpen(): Promise<void> {
     this.resizeObserver = new ResizeObserver(() => this.updateCompactClass());
     this.resizeObserver.observe(this.contentEl);
-    await this.load();
+    return this.load();
   }
 
   async onClose() {
