@@ -328,6 +328,45 @@ export default class IshibashiWebClipper extends Plugin {
     return getWebClipFolderPreset(language);
   }
 
+  tagFromFolderName(folder: string): string {
+    const name = normalizePath(folder).split("/").filter(Boolean).pop() || "";
+    return normalizeTag(name.replace(/^\d+[_-]/, ""));
+  }
+
+  siblingFolder(currentFolder: string, presetFolder: string): string {
+    const currentParts = normalizePath(currentFolder).split("/").filter(Boolean);
+    const presetName = normalizePath(presetFolder).split("/").filter(Boolean).pop() || "";
+    if (currentParts.length === 0 || !presetName) return normalizePath(presetFolder);
+    return [...currentParts.slice(0, -1), presetName].join("/");
+  }
+
+  getAutoFolderForTags(currentFolder: string, tags: string[]): string {
+    const normalizedCurrentFolder = normalizePath(currentFolder);
+    const inboxFolder = this.getDefaultTargetFolder();
+    if (normalizedCurrentFolder !== inboxFolder) return normalizedCurrentFolder;
+
+    const cleanTags = tags.map(normalizeTag).filter(Boolean);
+    const tagSet = new Set(cleanTags);
+    const inboxTags = unique([
+      this.tagFromFolderName(inboxFolder),
+      this.tagFromFolderName(this.getFolderPreset("ja").inbox),
+      this.tagFromFolderName(this.getFolderPreset("en").inbox)
+    ].filter(Boolean));
+    if (inboxTags.some((tag) => tagSet.has(tag))) return normalizedCurrentFolder;
+
+    const presets = [
+      ...this.getFolderPreset("ja").folders,
+      ...this.getFolderPreset("en").folders
+    ];
+    for (const folder of presets) {
+      const folderTag = this.tagFromFolderName(folder);
+      if (!folderTag || inboxTags.includes(folderTag)) continue;
+      if (tagSet.has(folderTag)) return this.siblingFolder(normalizedCurrentFolder, folder);
+    }
+
+    return normalizedCurrentFolder;
+  }
+
   async ensureFolderPresetFolders(language: "ja" | "en" = this.settings.language) {
     const preset = this.getFolderPreset(language);
     for (const folder of preset.folders) {
@@ -1833,12 +1872,16 @@ class WebClipLibraryView extends ItemView {
   }
 
   async applyOrganization(item: WebClipLibraryItem, folder: string, tags: string[]) {
-    const nextFolder = normalizePath(folder);
+    const cleanTags = unique(tags.map(normalizeTag).filter(Boolean));
+    const normalizedFolder = normalizePath(folder);
+    const nextFolder = normalizedFolder === item.folder
+      ? this.plugin.getAutoFolderForTags(item.folder, cleanTags)
+      : normalizedFolder;
     if (!nextFolder) {
       new Notice(this.plugin.t("libraryEditFolderRequired"));
       return;
     }
-    const moved = await this.plugin.updateWebClipOrganization(item.file, nextFolder, tags);
+    const moved = await this.plugin.updateWebClipOrganization(item.file, nextFolder, cleanTags);
     this.selectedPath = moved.path;
     if (this.selectedPaths.delete(item.file.path)) {
       this.selectedPaths.add(moved.path);
@@ -1861,7 +1904,12 @@ class WebClipLibraryView extends ItemView {
     const cleanTags = tags.map(normalizeTag).filter(Boolean);
     if (cleanTags.length === 0) return;
     for (const item of this.getSelectedItems()) {
-      await this.plugin.updateWebClipOrganization(item.file, item.folder, unique([...item.tags, ...cleanTags]));
+      const nextTags = unique([...item.tags, ...cleanTags]);
+      await this.plugin.updateWebClipOrganization(
+        item.file,
+        this.plugin.getAutoFolderForTags(item.folder, nextTags),
+        nextTags
+      );
     }
     new Notice(this.plugin.t("libraryEditComplete"));
     await this.load();
@@ -1871,10 +1919,11 @@ class WebClipLibraryView extends ItemView {
     const cleanTags = tags.map(normalizeTag).filter(Boolean);
     if (cleanTags.length === 0) return;
     for (const item of this.getSelectedItems()) {
+      const nextTags = item.tags.filter((tag) => !cleanTags.includes(tag));
       await this.plugin.updateWebClipOrganization(
         item.file,
-        item.folder,
-        item.tags.filter((tag) => !cleanTags.includes(tag))
+        this.plugin.getAutoFolderForTags(item.folder, nextTags),
+        nextTags
       );
     }
     new Notice(this.plugin.t("libraryEditComplete"));

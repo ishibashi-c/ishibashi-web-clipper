@@ -495,7 +495,6 @@
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  height: 330px;
   min-height: 330px;
   flex-direction: column;
   flex: 0 0 100%;
@@ -505,7 +504,7 @@
   border-left: 4px solid var(--iwc-library-rule);
   border-radius: 4px;
   background: var(--background-primary);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .ishibashi-web-clipper-library-card-body {
@@ -514,7 +513,7 @@
   min-height: 0;
   flex: 1 1 auto;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .ishibashi-web-clipper-library-card.is-selected {
@@ -641,9 +640,9 @@
 .ishibashi-web-clipper-library-folder,
 .ishibashi-web-clipper-library-link,
 .ishibashi-web-clipper-library-action {
-  min-height: 0;
-  padding: 2px 0;
-  border: 0;
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 1px solid transparent;
   background: transparent;
   color: var(--text-accent);
   font: inherit;
@@ -654,6 +653,9 @@
 .ishibashi-web-clipper-library-folder {
   display: block;
   width: 100%;
+  min-height: 0;
+  padding: 2px 0;
+  border: 0;
   color: var(--text-muted);
   text-align: left;
   overflow-wrap: anywhere;
@@ -669,8 +671,8 @@
 }
 
 .ishibashi-web-clipper-library-card-body > .ishibashi-web-clipper-library-tags {
-  max-height: 76px;
-  overflow: hidden;
+  max-height: none;
+  overflow: visible;
 }
 
 .ishibashi-web-clipper-library-tag-wrap {
@@ -741,15 +743,24 @@
   justify-content: space-between;
   gap: 12px;
   min-height: 32px;
-  margin-top: 14px;
+  margin-top: auto;
   padding-top: 12px;
   border-top: 1px solid var(--iwc-library-rule);
   background: var(--background-primary);
 }
 
 .ishibashi-web-clipper-library-action {
+  border-color: var(--iwc-library-rule);
+  border-radius: 4px;
+  background: var(--background-primary);
   font-size: 0.86em;
   font-weight: 600;
+}
+
+.ishibashi-web-clipper-library-action:hover {
+  border-color: var(--iwc-library-accent);
+  background: var(--iwc-library-plane);
+  color: var(--text-normal);
 }
 
 .ishibashi-web-clipper-library-bulk {
@@ -858,7 +869,6 @@
 .ishibashi-web-clipper-library-list.is-columns-2 .ishibashi-web-clipper-library-card,
 .ishibashi-web-clipper-library-list.is-columns-3 .ishibashi-web-clipper-library-card {
   min-height: 360px;
-  height: 360px;
   padding: 18px 18px 16px;
   border-left-width: 3px;
 }
