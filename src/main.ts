@@ -2302,15 +2302,23 @@ class WebClipMigrationModal extends Modal {
 
 class IshibashiWebClipperSettingTab extends PluginSettingTab {
   plugin: IshibashiWebClipper;
+  draftSettings: WebClipperSettings;
+  hasUnsavedChanges: boolean;
+  saveButtonEl: HTMLButtonElement | null = null;
+  saveStatusEl: HTMLElement | null = null;
   bookmarkletCodeEl: HTMLElement | null = null;
   bookmarkletPlainEl: HTMLTextAreaElement | null = null;
 
   constructor(app: App, plugin: IshibashiWebClipper) {
     super(app, plugin);
     this.plugin = plugin;
+    this.draftSettings = this.cloneSettings(plugin.settings);
+    this.hasUnsavedChanges = false;
   }
 
   display() {
+    this.draftSettings = this.cloneSettings(this.plugin.settings);
+    this.hasUnsavedChanges = false;
     this.renderSettings();
   }
 
@@ -2326,6 +2334,7 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
       text: this.plugin.t("settingsIntro"),
       cls: "ishibashi-web-clipper-settings-intro"
     });
+    this.createSaveBar(containerEl);
 
     this.createSummary(containerEl);
     this.createCaptureGuide(containerEl);
@@ -2343,15 +2352,14 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
         dropdown
           .addOption("ja", "日本語")
           .addOption("en", "English")
-          .setValue(this.plugin.settings.language)
-          .onChange(async (value: "ja" | "en") => {
-            const shouldUpdateFixedTags = this.plugin.isLanguageDefaultFixedTags(this.plugin.settings.fixedTags || []);
-            this.plugin.settings.language = value;
+          .setValue(this.draftSettings.language)
+          .onChange((value: "ja" | "en") => {
+            const shouldUpdateFixedTags = this.plugin.isLanguageDefaultFixedTags(this.draftSettings.fixedTags || []);
+            this.draftSettings.language = value;
             if (shouldUpdateFixedTags) {
-              this.plugin.settings.fixedTags = this.plugin.getDefaultFixedTags(value);
+              this.draftSettings.fixedTags = this.plugin.getDefaultFixedTags(value);
             }
-            await this.plugin.saveSettings();
-            this.plugin.updateRibbonLabel();
+            this.markDirty();
             this.renderSettings();
           });
       });
@@ -2368,12 +2376,12 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
       .addText((text) => {
         text
           .setPlaceholder(DEFAULT_SETTINGS.inboxFolder)
-          .setValue(this.plugin.settings.inboxFolder || DEFAULT_SETTINGS.inboxFolder)
-          .onChange(async (value) => {
+          .setValue(this.draftSettings.inboxFolder || DEFAULT_SETTINGS.inboxFolder)
+          .onChange((value) => {
             const folder = normalizePath(value) || DEFAULT_SETTINGS.inboxFolder;
-            this.plugin.settings.inboxFolder = folder;
-            this.plugin.settings.migrationTargetFolder = this.plugin.settings.migrationTargetFolder || folder;
-            await this.plugin.saveSettings();
+            this.draftSettings.inboxFolder = folder;
+            this.draftSettings.migrationTargetFolder = this.draftSettings.migrationTargetFolder || folder;
+            this.markDirty();
             this.refreshSummary();
           });
       });
@@ -2384,10 +2392,10 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
       .addText((text) => {
         text
           .setPlaceholder(this.plugin.getVaultName())
-          .setValue(this.plugin.settings.browserVaultName || this.plugin.getVaultName())
-          .onChange(async (value) => {
-            this.plugin.settings.browserVaultName = value.trim();
-            await this.plugin.saveSettings();
+          .setValue(this.draftSettings.browserVaultName || this.plugin.getVaultName())
+          .onChange((value) => {
+            this.draftSettings.browserVaultName = value.trim();
+            this.markDirty();
             this.refreshBookmarkletCode();
           });
       });
@@ -2399,7 +2407,13 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
         button
           .setButtonText(this.plugin.t("settingFolderPresetButton"))
           .onClick(async () => {
-            await this.plugin.applyFolderPreset();
+            await this.plugin.ensureFolderPresetFolders(this.draftSettings.language);
+            const preset = this.plugin.getFolderPreset(this.draftSettings.language);
+            this.draftSettings.workflowMode = "inbox";
+            this.draftSettings.inboxFolder = this.draftSettings.inboxFolder || preset.inbox;
+            this.draftSettings.targetFolder = this.draftSettings.targetFolder || preset.root;
+            this.draftSettings.migrationTargetFolder = this.draftSettings.migrationTargetFolder || preset.root;
+            this.markDirty();
             new Notice(this.plugin.t("noticeFolderPresetApplied"));
             this.renderSettings();
           });
@@ -2417,10 +2431,10 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
       .addTextArea((text) => {
         text
           .setPlaceholder(this.plugin.getDefaultFixedTags().join("\n"))
-          .setValue((this.plugin.settings.fixedTags || this.plugin.getDefaultFixedTags()).join("\n"))
-          .onChange(async (value) => {
-            this.plugin.settings.fixedTags = splitTags(value);
-            await this.plugin.saveSettings();
+          .setValue((this.draftSettings.fixedTags || this.plugin.getDefaultFixedTags(this.draftSettings.language)).join("\n"))
+          .onChange((value) => {
+            this.draftSettings.fixedTags = splitTags(value);
+            this.markDirty();
             this.refreshSummary();
           });
         text.inputEl.rows = 3;
@@ -2430,9 +2444,9 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
       .setName(this.plugin.t("settingDomainTag"))
       .setDesc(this.plugin.t("settingDomainTagDesc"))
       .addToggle((toggle) => {
-        toggle.setValue(!!this.plugin.settings.addDomainTag).onChange(async (value) => {
-          this.plugin.settings.addDomainTag = value;
-          await this.plugin.saveSettings();
+        toggle.setValue(!!this.draftSettings.addDomainTag).onChange((value) => {
+          this.draftSettings.addDomainTag = value;
+          this.markDirty();
           this.renderSettings();
         });
       });
@@ -2441,9 +2455,9 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
       .setName(this.plugin.t("settingFolderTags"))
       .setDesc(this.plugin.t("settingFolderTagsDesc"))
       .addToggle((toggle) => {
-        toggle.setValue(!!this.plugin.settings.addFolderTags).onChange(async (value) => {
-          this.plugin.settings.addFolderTags = value;
-          await this.plugin.saveSettings();
+        toggle.setValue(!!this.draftSettings.addFolderTags).onChange((value) => {
+          this.draftSettings.addFolderTags = value;
+          this.markDirty();
           this.renderSettings();
         });
       });
@@ -2458,9 +2472,9 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
       .setName(this.plugin.t("settingConfirm"))
       .setDesc(this.plugin.t("settingConfirmDesc"))
       .addToggle((toggle) => {
-        toggle.setValue(!!this.plugin.settings.confirmBeforeSave).onChange(async (value) => {
-          this.plugin.settings.confirmBeforeSave = value;
-          await this.plugin.saveSettings();
+        toggle.setValue(!!this.draftSettings.confirmBeforeSave).onChange((value) => {
+          this.draftSettings.confirmBeforeSave = value;
+          this.markDirty();
           this.refreshSummary();
         });
       });
@@ -2468,9 +2482,9 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
     new Setting(behaviorSection)
       .setName(this.plugin.t("settingOpenAfterClip"))
       .addToggle((toggle) => {
-        toggle.setValue(!!this.plugin.settings.openAfterClip).onChange(async (value) => {
-          this.plugin.settings.openAfterClip = value;
-          await this.plugin.saveSettings();
+        toggle.setValue(!!this.draftSettings.openAfterClip).onChange((value) => {
+          this.draftSettings.openAfterClip = value;
+          this.markDirty();
         });
       });
 
@@ -2478,10 +2492,10 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
       .setName(this.plugin.t("settingFetchMetadata"))
       .setDesc(this.plugin.t("settingFetchMetadataDesc"))
       .addToggle((toggle) => {
-        toggle.setValue(!!this.plugin.settings.fetchMetadata).onChange(async (value) => {
-          this.plugin.settings.fetchMetadata = value;
-          this.plugin.settings.fetchPageTitle = value;
-          await this.plugin.saveSettings();
+        toggle.setValue(!!this.draftSettings.fetchMetadata).onChange((value) => {
+          this.draftSettings.fetchMetadata = value;
+          this.draftSettings.fetchPageTitle = value;
+          this.markDirty();
           this.refreshSummary();
         });
       });
@@ -2489,9 +2503,9 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
     new Setting(behaviorSection)
       .setName(this.plugin.t("settingPreventDuplicates"))
       .addToggle((toggle) => {
-        toggle.setValue(!!this.plugin.settings.preventDuplicateUrls).onChange(async (value) => {
-          this.plugin.settings.preventDuplicateUrls = value;
-          await this.plugin.saveSettings();
+        toggle.setValue(!!this.draftSettings.preventDuplicateUrls).onChange((value) => {
+          this.draftSettings.preventDuplicateUrls = value;
+          this.markDirty();
           this.refreshSummary();
         });
       });
@@ -2502,10 +2516,10 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
       .addText((text) => {
         text
           .setPlaceholder("48")
-          .setValue(String(this.plugin.settings.maxFileNameLength || DEFAULT_SETTINGS.maxFileNameLength))
-          .onChange(async (value) => {
-            this.plugin.settings.maxFileNameLength = normalizeFileNameLength(value);
-            await this.plugin.saveSettings();
+          .setValue(String(this.draftSettings.maxFileNameLength || DEFAULT_SETTINGS.maxFileNameLength))
+          .onChange((value) => {
+            this.draftSettings.maxFileNameLength = normalizeFileNameLength(value);
+            this.markDirty();
           });
       });
 
@@ -2514,10 +2528,10 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
       .addText((text) => {
         text
           .setPlaceholder("YYYY-MM-DD HH:mm")
-          .setValue(this.plugin.settings.dateFormat)
-          .onChange(async (value) => {
-            this.plugin.settings.dateFormat = value || DEFAULT_SETTINGS.dateFormat;
-            await this.plugin.saveSettings();
+          .setValue(this.draftSettings.dateFormat)
+          .onChange((value) => {
+            this.draftSettings.dateFormat = value || DEFAULT_SETTINGS.dateFormat;
+            this.markDirty();
           });
       });
 
@@ -2533,10 +2547,10 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
     new Setting(templateSection).addTextArea((text) => {
       text.inputEl.addClass("ishibashi-web-clipper-template");
       text
-        .setValue(this.plugin.settings.noteTemplate || DEFAULT_SETTINGS.noteTemplate)
-        .onChange(async (value) => {
-          this.plugin.settings.noteTemplate = value || DEFAULT_SETTINGS.noteTemplate;
-          await this.plugin.saveSettings();
+        .setValue(this.draftSettings.noteTemplate || DEFAULT_SETTINGS.noteTemplate)
+        .onChange((value) => {
+          this.draftSettings.noteTemplate = value || DEFAULT_SETTINGS.noteTemplate;
+          this.markDirty();
         });
     });
 
@@ -2564,10 +2578,10 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
       .addText((text) => {
         text
           .setPlaceholder(this.plugin.getFolderPreset().root)
-          .setValue(this.plugin.getDefaultMigrationFolder())
-          .onChange(async (value) => {
-            this.plugin.settings.migrationTargetFolder = normalizePath(value) || this.plugin.getFolderPreset().root;
-            await this.plugin.saveSettings();
+          .setValue(this.getDefaultDraftMigrationFolder())
+          .onChange((value) => {
+            this.draftSettings.migrationTargetFolder = normalizePath(value) || this.plugin.getFolderPreset(this.draftSettings.language).root;
+            this.markDirty();
           });
       });
 
@@ -2579,6 +2593,51 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
           .setButtonText(this.plugin.t("settingMigrationRunButton"))
           .onClick(() => this.plugin.openMigrationModal());
       });
+  }
+
+  cloneSettings(settings: WebClipperSettings): WebClipperSettings {
+    return mergeSettings(JSON.parse(JSON.stringify(settings)));
+  }
+
+  createSaveBar(containerEl: HTMLElement) {
+    const saveBar = containerEl.createDiv({ cls: "ishibashi-web-clipper-settings-savebar" });
+    this.saveStatusEl = saveBar.createDiv({
+      text: this.hasUnsavedChanges ? this.plugin.t("settingsUnsavedChanges") : "",
+      cls: "ishibashi-web-clipper-settings-save-status"
+    });
+    this.saveButtonEl = saveBar.createEl("button", {
+      text: this.plugin.t("settingsSaveButton"),
+      cls: "mod-cta"
+    });
+    this.saveButtonEl.disabled = !this.hasUnsavedChanges;
+    this.saveButtonEl.addEventListener("click", () => {
+      void this.saveDraftSettings();
+    });
+  }
+
+  markDirty() {
+    this.hasUnsavedChanges = true;
+    this.updateSaveBar();
+  }
+
+  updateSaveBar() {
+    if (this.saveStatusEl) {
+      this.saveStatusEl.setText(this.hasUnsavedChanges ? this.plugin.t("settingsUnsavedChanges") : "");
+    }
+    if (this.saveButtonEl) {
+      this.saveButtonEl.disabled = !this.hasUnsavedChanges;
+    }
+  }
+
+  async saveDraftSettings() {
+    this.plugin.settings = mergeSettings(this.draftSettings);
+    await this.plugin.saveSettings();
+    this.draftSettings = this.cloneSettings(this.plugin.settings);
+    this.hasUnsavedChanges = false;
+    this.plugin.updateRibbonLabel();
+    this.updateSaveBar();
+    new Notice(this.plugin.t("noticeSettingsSaved"));
+    this.renderSettings();
   }
 
   createSection(containerEl: HTMLElement, title: string, description: string): HTMLElement {
@@ -2670,11 +2729,12 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
     summary.remove();
     const h2 = this.containerEl.querySelector("h2");
     const intro = this.containerEl.querySelector(".ishibashi-web-clipper-settings-intro");
+    const saveBar = this.containerEl.querySelector(".ishibashi-web-clipper-settings-savebar");
     const guide = this.containerEl.querySelector(".ishibashi-web-clipper-settings-guide");
     this.createSummary(this.containerEl);
     const newSummary = this.containerEl.querySelector(".ishibashi-web-clipper-settings-summary");
-    if (newSummary && (intro || h2)) {
-      (intro || h2)?.insertAdjacentElement("afterend", newSummary);
+    if (newSummary && (saveBar || intro || h2)) {
+      (saveBar || intro || h2)?.insertAdjacentElement("afterend", newSummary);
     }
     if (guide && newSummary) {
       newSummary.insertAdjacentElement("afterend", guide);
@@ -2712,27 +2772,39 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
   }
 
   getBookmarkletCode(): string {
-    const vault = (this.plugin.settings.browserVaultName || this.plugin.getVaultName()).trim();
+    const vault = (this.draftSettings.browserVaultName || this.plugin.getVaultName()).trim();
     const vaultPart = vault ? `vault=${encodeURIComponent(vault)}&` : "";
     return `javascript:(()=>{const e=encodeURIComponent;const url=location.href;const title=document.title||"";const selection=window.getSelection?String(window.getSelection()).trim():"";let target=\`obsidian://${PROTOCOL_ACTION}?${vaultPart}url=${"${e(url)}"}&title=${"${e(title)}"}\`;if(selection)target+=\`&note=${"${e(selection.slice(0,1500))}"}\`;location.href=target;})();`;
   }
 
   getDestinationSummary(): string {
-    return this.plugin.settings.inboxFolder || DEFAULT_SETTINGS.inboxFolder;
+    return this.draftSettings.inboxFolder || DEFAULT_SETTINGS.inboxFolder;
   }
 
   getTagsSummary(): string {
-    const tags = this.plugin.getClipTags(this.getDestinationSummary());
-    return tags.length > 0 ? tags.join(", ") : this.plugin.t("summaryNoTags");
+    const fixedTags = Array.isArray(this.draftSettings.fixedTags)
+      ? this.draftSettings.fixedTags
+      : this.plugin.getDefaultFixedTags(this.draftSettings.language);
+    const tags = fixedTags.map(normalizeTag).filter(Boolean);
+    if (this.draftSettings.addFolderTags) {
+      tags.push(...tagsFromFolderPath(this.getDestinationSummary()));
+    }
+    const uniqueTags = unique(tags);
+    return uniqueTags.length > 0 ? uniqueTags.join(", ") : this.plugin.t("summaryNoTags");
   }
 
   getProtectionSummary(): string {
-    const duplicate = this.plugin.settings.preventDuplicateUrls
+    const duplicate = this.draftSettings.preventDuplicateUrls
       ? this.plugin.t("summaryDuplicateOn")
       : this.plugin.t("summaryDuplicateOff");
-    const metadata = this.plugin.settings.fetchMetadata
+    const metadata = this.draftSettings.fetchMetadata
       ? this.plugin.t("summaryMetadataOn")
       : this.plugin.t("summaryMetadataOff");
     return `${duplicate} / ${metadata}`;
+  }
+
+  getDefaultDraftMigrationFolder(): string {
+    const preset = this.plugin.getFolderPreset(this.draftSettings.language);
+    return normalizePath(this.draftSettings.migrationTargetFolder || preset.root);
   }
 }

@@ -9,6 +9,22 @@
   line-height: 1.55;
 }
 
+.ishibashi-web-clipper-settings-savebar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin: 0 0 18px;
+  padding: 12px 0;
+  border-top: 1px solid var(--background-modifier-border);
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.ishibashi-web-clipper-settings-save-status {
+  color: var(--text-muted);
+  font-size: 0.9em;
+}
+
 .ishibashi-web-clipper-settings-summary {
   margin: 18px 0 28px;
   padding: 16px;
