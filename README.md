@@ -17,6 +17,7 @@ It is designed for mobile sharing workflows: send a URL to Obsidian, save a shor
 - Clip history view for recently saved or duplicate clips.
 - Web Clip Library view for browsing saved clips across folders, domains, and tags.
 - First-run setup for Japanese or English UI.
+- Persistent settings action bar with explicit save and undo controls.
 - Inbox-first workflow: save every clip to a staging folder first, then organize later.
 - Optional folder preset for creating a `10_...`, `20_...`, `30_...` classification structure under `webclip` in English or `webクリップ` in Japanese.
 - Migration command for updating existing web clip frontmatter in a selected folder.
@@ -147,6 +148,7 @@ Ishibashi Web Clipper は、共有されたWebリンクをObsidianのMarkdownノ
 - 最近保存したクリップや重複検出を確認できる履歴ビュー
 - 保存済みクリップをフォルダ、ドメイン、タグで横断的に見直せる管理ページ
 - 初回設定で日本語/英語を選択
+- 画面下部の固定アクションバーで未保存状態を確認し、設定を保存または変更取消
 - すべてのクリップを一旦Inbox/未整理フォルダに入れて、後から整理する運用を基本に設計
 - `10_...`, `20_...`, `30_...` のような分類フォルダ構成を任意で作成できるプリセット
 - 選択したフォルダ内の既存Webクリップfrontmatterを最新版形式に整える移行コマンド

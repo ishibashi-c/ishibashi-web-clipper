@@ -2305,6 +2305,7 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
   draftSettings: WebClipperSettings;
   hasUnsavedChanges: boolean;
   saveButtonEl: HTMLButtonElement | null = null;
+  undoButtonEl: HTMLButtonElement | null = null;
   saveStatusEl: HTMLElement | null = null;
   bookmarkletCodeEl: HTMLElement | null = null;
   bookmarkletPlainEl: HTMLTextAreaElement | null = null;
@@ -2334,8 +2335,6 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
       text: this.plugin.t("settingsIntro"),
       cls: "ishibashi-web-clipper-settings-intro"
     });
-    this.createSaveBar(containerEl);
-
     this.createSummary(containerEl);
     this.createCaptureGuide(containerEl);
 
@@ -2593,6 +2592,8 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
           .setButtonText(this.plugin.t("settingMigrationRunButton"))
           .onClick(() => this.plugin.openMigrationModal());
       });
+
+    this.createSaveBar(containerEl);
   }
 
   cloneSettings(settings: WebClipperSettings): WebClipperSettings {
@@ -2600,18 +2601,32 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
   }
 
   createSaveBar(containerEl: HTMLElement) {
-    const saveBar = containerEl.createDiv({ cls: "ishibashi-web-clipper-settings-savebar" });
+    const saveBar = containerEl.createDiv({
+      cls: `ishibashi-web-clipper-settings-savebar${this.hasUnsavedChanges ? " is-dirty" : ""}`
+    });
     this.saveStatusEl = saveBar.createDiv({
-      text: this.hasUnsavedChanges ? this.plugin.t("settingsUnsavedChanges") : "",
+      text: this.hasUnsavedChanges ? this.plugin.t("settingsUnsavedChanges") : this.plugin.t("settingsSaved"),
       cls: "ishibashi-web-clipper-settings-save-status"
     });
-    this.saveButtonEl = saveBar.createEl("button", {
+    const actions = saveBar.createDiv({ cls: "ishibashi-web-clipper-settings-save-actions" });
+    this.undoButtonEl = actions.createEl("button", {
+      text: this.plugin.t("settingsUndoButton")
+    });
+    this.undoButtonEl.disabled = !this.hasUnsavedChanges;
+    this.undoButtonEl.addEventListener("click", () => {
+      this.draftSettings = this.cloneSettings(this.plugin.settings);
+      this.hasUnsavedChanges = false;
+      this.renderSettings();
+    });
+    this.saveButtonEl = actions.createEl("button", {
       text: this.plugin.t("settingsSaveButton"),
       cls: "mod-cta"
     });
     this.saveButtonEl.disabled = !this.hasUnsavedChanges;
     this.saveButtonEl.addEventListener("click", () => {
-      void this.saveDraftSettings();
+      void this.saveDraftSettings().catch(() => {
+        new Notice(this.plugin.t("noticeSettingsSaveFailed"));
+      });
     });
   }
 
@@ -2621,23 +2636,35 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
   }
 
   updateSaveBar() {
+    const saveBar = this.containerEl.querySelector(".ishibashi-web-clipper-settings-savebar");
+    saveBar?.toggleClass("is-dirty", this.hasUnsavedChanges);
     if (this.saveStatusEl) {
-      this.saveStatusEl.setText(this.hasUnsavedChanges ? this.plugin.t("settingsUnsavedChanges") : "");
+      this.saveStatusEl.setText(this.hasUnsavedChanges
+        ? this.plugin.t("settingsUnsavedChanges")
+        : this.plugin.t("settingsSaved"));
     }
+    if (this.undoButtonEl) this.undoButtonEl.disabled = !this.hasUnsavedChanges;
     if (this.saveButtonEl) {
       this.saveButtonEl.disabled = !this.hasUnsavedChanges;
     }
   }
 
   async saveDraftSettings() {
+    const savedSettings = this.cloneSettings(this.plugin.settings);
     this.plugin.settings = mergeSettings(this.draftSettings);
-    await this.plugin.saveSettings();
-    this.draftSettings = this.cloneSettings(this.plugin.settings);
-    this.hasUnsavedChanges = false;
-    this.plugin.updateRibbonLabel();
-    this.updateSaveBar();
-    new Notice(this.plugin.t("noticeSettingsSaved"));
-    this.renderSettings();
+    try {
+      await this.plugin.saveSettings();
+      this.draftSettings = this.cloneSettings(this.plugin.settings);
+      this.hasUnsavedChanges = false;
+      this.plugin.updateRibbonLabel();
+      this.updateSaveBar();
+      new Notice(this.plugin.t("noticeSettingsSaved"));
+      this.renderSettings();
+    } catch (error: unknown) {
+      this.plugin.settings = savedSettings;
+      if (this.saveButtonEl) this.saveButtonEl.disabled = false;
+      throw error;
+    }
   }
 
   createSection(containerEl: HTMLElement, title: string, description: string): HTMLElement {
@@ -2729,12 +2756,11 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
     summary.remove();
     const h2 = this.containerEl.querySelector("h2");
     const intro = this.containerEl.querySelector(".ishibashi-web-clipper-settings-intro");
-    const saveBar = this.containerEl.querySelector(".ishibashi-web-clipper-settings-savebar");
     const guide = this.containerEl.querySelector(".ishibashi-web-clipper-settings-guide");
     this.createSummary(this.containerEl);
     const newSummary = this.containerEl.querySelector(".ishibashi-web-clipper-settings-summary");
-    if (newSummary && (saveBar || intro || h2)) {
-      (saveBar || intro || h2)?.insertAdjacentElement("afterend", newSummary);
+    if (newSummary && (intro || h2)) {
+      (intro || h2)?.insertAdjacentElement("afterend", newSummary);
     }
     if (guide && newSummary) {
       newSummary.insertAdjacentElement("afterend", guide);

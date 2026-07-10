@@ -104,9 +104,12 @@ var STRINGS = {
     noticeFolderPresetFailed: "\u521D\u671F\u8A2D\u5B9A\u306F\u5B8C\u4E86\u3057\u307E\u3057\u305F\u304C\u3001\u30D5\u30A9\u30EB\u30C0\u30D7\u30EA\u30BB\u30C3\u30C8\u3092\u4F5C\u6210\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002\u8A2D\u5B9A\u753B\u9762\u304B\u3089\u518D\u5B9F\u884C\u3057\u3066\u304F\u3060\u3055\u3044\u3002",
     noticeSetupFailed: "\u521D\u671F\u8A2D\u5B9A\u3092\u5B8C\u4E86\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002",
     noticeSettingsSaved: "\u8A2D\u5B9A\u3092\u4FDD\u5B58\u3057\u307E\u3057\u305F\u3002",
+    noticeSettingsSaveFailed: "\u8A2D\u5B9A\u3092\u4FDD\u5B58\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002\u5909\u66F4\u5185\u5BB9\u306F\u753B\u9762\u306B\u6B8B\u3063\u3066\u3044\u307E\u3059\u3002",
     settingsHeading: "Web\u30AF\u30EA\u30C3\u30D7\u8A2D\u5B9A",
     settingsSaveButton: "\u8A2D\u5B9A\u3092\u4FDD\u5B58",
+    settingsUndoButton: "\u5909\u66F4\u3092\u5143\u306B\u623B\u3059",
     settingsUnsavedChanges: "\u672A\u4FDD\u5B58\u306E\u5909\u66F4\u304C\u3042\u308A\u307E\u3059\u3002",
+    settingsSaved: "\u3059\u3079\u3066\u4FDD\u5B58\u6E08\u307F",
     firstRunDesc: "\u6700\u521D\u306B\u8868\u793A\u8A00\u8A9E\u3092\u9078\u3093\u3067\u304F\u3060\u3055\u3044\u3002Web\u30AF\u30EA\u30C3\u30D7\u306F\u672A\u6574\u7406\u30D5\u30A9\u30EB\u30C0\u306B\u4FDD\u5B58\u3055\u308C\u3001\u5F8C\u304B\u3089\u6574\u7406\u3067\u304D\u307E\u3059\u3002",
     firstRunPreset: "\u5206\u985E\u30D5\u30A9\u30EB\u30C0\u30D7\u30EA\u30BB\u30C3\u30C8\u3092\u4F5C\u6210\u3059\u308B",
     firstRunPresetDesc: "web\u30AF\u30EA\u30C3\u30D7\u914D\u4E0B\u306B 10_\u672A\u6574\u7406\u300120_\u6280\u8853\u300130_\u30D3\u30B8\u30CD\u30B9... \u306E\u30D5\u30A9\u30EB\u30C0\u69CB\u6210\u3092\u4F5C\u6210\u3057\u307E\u3059\u3002\u5F8C\u304B\u3089\u8A2D\u5B9A\u753B\u9762\u3067\u8FFD\u52A0\u3059\u308B\u3053\u3068\u3082\u3067\u304D\u307E\u3059\u3002",
@@ -296,9 +299,12 @@ var STRINGS = {
     noticeFolderPresetFailed: "Setup was completed, but the folder preset could not be created. Run it again from settings.",
     noticeSetupFailed: "Could not complete setup.",
     noticeSettingsSaved: "Settings saved.",
+    noticeSettingsSaveFailed: "Could not save settings. Your changes remain on this screen.",
     settingsHeading: "Web clipper settings",
     settingsSaveButton: "Save settings",
+    settingsUndoButton: "Undo changes",
     settingsUnsavedChanges: "You have unsaved changes.",
+    settingsSaved: "All changes saved",
     firstRunDesc: "Choose your display language. Web clips are collected in an inbox folder so you can organize them later.",
     firstRunPreset: "Create the classification folder preset",
     firstRunPresetDesc: "Creates a folder structure under webclip, such as 10_Inbox, 20_Tech, and 30_Business. You can also add it later from settings.",
@@ -2590,6 +2596,7 @@ var IshibashiWebClipperSettingTab = class extends import_obsidian2.PluginSetting
   constructor(app, plugin) {
     super(app, plugin);
     this.saveButtonEl = null;
+    this.undoButtonEl = null;
     this.saveStatusEl = null;
     this.bookmarkletCodeEl = null;
     this.bookmarkletPlainEl = null;
@@ -2612,7 +2619,6 @@ var IshibashiWebClipperSettingTab = class extends import_obsidian2.PluginSetting
       text: this.plugin.t("settingsIntro"),
       cls: "ishibashi-web-clipper-settings-intro"
     });
-    this.createSaveBar(containerEl);
     this.createSummary(containerEl);
     this.createCaptureGuide(containerEl);
     const startSection = this.createSection(
@@ -2772,23 +2778,38 @@ var IshibashiWebClipperSettingTab = class extends import_obsidian2.PluginSetting
     new import_obsidian2.Setting(maintenanceSection).setName(this.plugin.t("settingMigrationRun")).setDesc(this.plugin.t("settingMigrationRunDesc")).addButton((button) => {
       button.setButtonText(this.plugin.t("settingMigrationRunButton")).onClick(() => this.plugin.openMigrationModal());
     });
+    this.createSaveBar(containerEl);
   }
   cloneSettings(settings) {
     return mergeSettings(JSON.parse(JSON.stringify(settings)));
   }
   createSaveBar(containerEl) {
-    const saveBar = containerEl.createDiv({ cls: "ishibashi-web-clipper-settings-savebar" });
+    const saveBar = containerEl.createDiv({
+      cls: `ishibashi-web-clipper-settings-savebar${this.hasUnsavedChanges ? " is-dirty" : ""}`
+    });
     this.saveStatusEl = saveBar.createDiv({
-      text: this.hasUnsavedChanges ? this.plugin.t("settingsUnsavedChanges") : "",
+      text: this.hasUnsavedChanges ? this.plugin.t("settingsUnsavedChanges") : this.plugin.t("settingsSaved"),
       cls: "ishibashi-web-clipper-settings-save-status"
     });
-    this.saveButtonEl = saveBar.createEl("button", {
+    const actions = saveBar.createDiv({ cls: "ishibashi-web-clipper-settings-save-actions" });
+    this.undoButtonEl = actions.createEl("button", {
+      text: this.plugin.t("settingsUndoButton")
+    });
+    this.undoButtonEl.disabled = !this.hasUnsavedChanges;
+    this.undoButtonEl.addEventListener("click", () => {
+      this.draftSettings = this.cloneSettings(this.plugin.settings);
+      this.hasUnsavedChanges = false;
+      this.renderSettings();
+    });
+    this.saveButtonEl = actions.createEl("button", {
       text: this.plugin.t("settingsSaveButton"),
       cls: "mod-cta"
     });
     this.saveButtonEl.disabled = !this.hasUnsavedChanges;
     this.saveButtonEl.addEventListener("click", () => {
-      void this.saveDraftSettings();
+      void this.saveDraftSettings().catch(() => {
+        new import_obsidian2.Notice(this.plugin.t("noticeSettingsSaveFailed"));
+      });
     });
   }
   markDirty() {
@@ -2796,22 +2817,32 @@ var IshibashiWebClipperSettingTab = class extends import_obsidian2.PluginSetting
     this.updateSaveBar();
   }
   updateSaveBar() {
+    const saveBar = this.containerEl.querySelector(".ishibashi-web-clipper-settings-savebar");
+    saveBar?.toggleClass("is-dirty", this.hasUnsavedChanges);
     if (this.saveStatusEl) {
-      this.saveStatusEl.setText(this.hasUnsavedChanges ? this.plugin.t("settingsUnsavedChanges") : "");
+      this.saveStatusEl.setText(this.hasUnsavedChanges ? this.plugin.t("settingsUnsavedChanges") : this.plugin.t("settingsSaved"));
     }
+    if (this.undoButtonEl) this.undoButtonEl.disabled = !this.hasUnsavedChanges;
     if (this.saveButtonEl) {
       this.saveButtonEl.disabled = !this.hasUnsavedChanges;
     }
   }
   async saveDraftSettings() {
+    const savedSettings = this.cloneSettings(this.plugin.settings);
     this.plugin.settings = mergeSettings(this.draftSettings);
-    await this.plugin.saveSettings();
-    this.draftSettings = this.cloneSettings(this.plugin.settings);
-    this.hasUnsavedChanges = false;
-    this.plugin.updateRibbonLabel();
-    this.updateSaveBar();
-    new import_obsidian2.Notice(this.plugin.t("noticeSettingsSaved"));
-    this.renderSettings();
+    try {
+      await this.plugin.saveSettings();
+      this.draftSettings = this.cloneSettings(this.plugin.settings);
+      this.hasUnsavedChanges = false;
+      this.plugin.updateRibbonLabel();
+      this.updateSaveBar();
+      new import_obsidian2.Notice(this.plugin.t("noticeSettingsSaved"));
+      this.renderSettings();
+    } catch (error) {
+      this.plugin.settings = savedSettings;
+      if (this.saveButtonEl) this.saveButtonEl.disabled = false;
+      throw error;
+    }
   }
   createSection(containerEl, title, description) {
     const section = containerEl.createDiv({ cls: "ishibashi-web-clipper-settings-section" });
@@ -2891,12 +2922,11 @@ var IshibashiWebClipperSettingTab = class extends import_obsidian2.PluginSetting
     summary.remove();
     const h2 = this.containerEl.querySelector("h2");
     const intro = this.containerEl.querySelector(".ishibashi-web-clipper-settings-intro");
-    const saveBar = this.containerEl.querySelector(".ishibashi-web-clipper-settings-savebar");
     const guide = this.containerEl.querySelector(".ishibashi-web-clipper-settings-guide");
     this.createSummary(this.containerEl);
     const newSummary = this.containerEl.querySelector(".ishibashi-web-clipper-settings-summary");
-    if (newSummary && (saveBar || intro || h2)) {
-      (saveBar || intro || h2)?.insertAdjacentElement("afterend", newSummary);
+    if (newSummary && (intro || h2)) {
+      (intro || h2)?.insertAdjacentElement("afterend", newSummary);
     }
     if (guide && newSummary) {
       newSummary.insertAdjacentElement("afterend", guide);
