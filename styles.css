@@ -1066,7 +1066,7 @@
   }
 
   .ishibashi-web-clipper-library-card {
-    flex-basis: 100%;
+    flex: 0 0 auto;
     max-width: 100%;
     height: auto;
     min-height: 0;
@@ -1120,7 +1120,7 @@
 }
 
 .ishibashi-web-clipper-library.is-compact .ishibashi-web-clipper-library-card {
-  flex-basis: 100%;
+  flex: 0 0 auto;
   max-width: 100%;
   height: auto;
   min-height: 0;
