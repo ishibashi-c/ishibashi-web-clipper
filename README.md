@@ -2,7 +2,7 @@
 
 > **Ishibashi Web Clipper V2**
 >
-> [Ishibashi Web Clipper V2](https://github.com/ishibashi-c/ishibashi-web-clipper-v2) is published as an independent plugin with the new plugin ID `ishibashi-web-clipper-v2`. It does not replace or automatically update installations of this original plugin. This repository and its V1 release assets remain available for existing users.
+> [Ishibashi Web Clipper V2](https://github.com/ishibashi-c/ishibashi-web-clipper-v2) is published as an independent plugin with the new plugin ID `ishibashi-web-clipper-next`. It does not replace or automatically update installations of this original plugin. This repository and its V1 release assets remain available for existing users.
 >
 > V2 does not request clipped pages and does not fetch HTML, redirects, Open Graph, Twitter Card, descriptions, images, or article bodies. Install it separately and move or recreate notes only when you choose to do so.
 
