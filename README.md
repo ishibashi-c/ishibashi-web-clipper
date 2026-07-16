@@ -1,5 +1,11 @@
 # Ishibashi Web Clipper
 
+> **V2 repository transition**
+>
+> Development and releases have moved to [ishibashi-c/ishibashi-web-clipper-v2](https://github.com/ishibashi-c/ishibashi-web-clipper-v2). V2 keeps the same plugin ID, `ishibashi-web-clipper`, and is intended to replace this repository as the publication source for the existing Obsidian Community Plugin listing. This repository and its V1 release assets will remain public while Obsidian reviews the repository-reference change.
+>
+> V2 removes automatic requests to clipped pages and no longer fetches Open Graph, Twitter Card, description, image, or redirect metadata. See the [V2 migration guide](https://github.com/ishibashi-c/ishibashi-web-clipper-v2/blob/main/MIGRATION_V2.md) before cleaning existing notes.
+
 Ishibashi Web Clipper captures shared web links as Markdown notes in Obsidian.
 It is designed for mobile sharing workflows: send a URL to Obsidian, save a short note, avoid duplicate clips, and review recent clips later.
 
