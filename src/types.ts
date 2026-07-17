@@ -40,6 +40,7 @@ export interface WebClipperSettings {
   noteTemplate: string;
   fetchMetadata: boolean;
   fetchPageTitle: boolean;
+  retirementNoticeShownVersion: string;
   confirmBeforeSave: boolean;
   openAfterClip: boolean;
   fixedTags: string[];

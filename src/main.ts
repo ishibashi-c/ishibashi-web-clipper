@@ -10,8 +10,7 @@ import {
   Setting,
   TFile,
   TFolder,
-  WorkspaceLeaf,
-  requestUrl
+  WorkspaceLeaf
 } from "obsidian";
 
 import {
@@ -28,13 +27,11 @@ import { mergeSettings } from "./settings";
 import {
   ClipDraft,
   WebClipLibraryItem,
-  WebClipMetadata,
   WebClipMigrationItem,
   WebClipMigrationResult,
   WebClipperSettings
 } from "./types";
 import {
-  absoluteUrl,
   cleanMemo,
   cleanMetadata,
   cleanText,
@@ -62,13 +59,9 @@ import {
   normalizeTag,
   normalizeUrl,
   nowIsoString,
-  parseOpenGraph,
-  parseHtmlTitle,
   parseSharedText,
   readFrontmatter,
-  resolveFetchFinalUrl,
   sanitizeFileName,
-  shouldResolveSharedRedirect,
   shortHash,
   splitTags,
   tagFromDomain,
@@ -76,8 +69,7 @@ import {
   titleFromUrl,
   truncateFileName,
   unique,
-  urlsMatch,
-  withTimeout
+  urlsMatch
 } from "./utils";
 
 type ProtocolParams = Record<string, string | string[] | undefined>;
@@ -86,6 +78,7 @@ type PartialClipInput = {
   url: string;
   title?: string;
   note?: string;
+  requireConfirmation?: boolean;
 };
 
 export default class IshibashiWebClipper extends Plugin {
@@ -95,8 +88,19 @@ export default class IshibashiWebClipper extends Plugin {
 
   async onload() {
     this.settings = mergeSettings(await this.loadData());
+    let settingsChanged = false;
     if (!this.settings.browserVaultName) {
       this.settings.browserVaultName = this.getVaultName();
+      settingsChanged = true;
+    }
+    if (this.settings.retirementNoticeShownVersion !== "1.0.10") {
+      this.settings.retirementNoticeShownVersion = "1.0.10";
+      settingsChanged = true;
+      this.app.workspace.onLayoutReady(() => {
+        new Notice(this.t("noticeRetired"), 20000);
+      });
+    }
+    if (settingsChanged) {
       await this.saveSettings();
     }
 
@@ -245,7 +249,7 @@ export default class IshibashiWebClipper extends Plugin {
       return;
     }
 
-    await this.prepareClip(parsed);
+    await this.prepareClip({ url: parsed.url, title: "", note: "", requireConfirmation: true });
   }
 
   async prepareClip(input: PartialClipInput) {
@@ -254,27 +258,25 @@ export default class IshibashiWebClipper extends Plugin {
       new Notice(this.t("noticeInvalidUrl"));
       return;
     }
-    const resolvedUrl = await this.resolveSharedRedirect(normalizedUrl);
-
     const duplicate = this.settings.preventDuplicateUrls
-      ? await this.findExistingClip(resolvedUrl)
+      ? await this.findExistingClip(normalizedUrl)
       : null;
     if (duplicate) {
       new Notice(this.t("noticeDuplicate"));
       await this.openFile(duplicate.path);
       await this.recordHistory({
-        url: resolvedUrl,
-        title: duplicate.basename || titleFromUrl(resolvedUrl),
+        url: normalizedUrl,
+        title: duplicate.basename || titleFromUrl(normalizedUrl),
         path: duplicate.path,
         status: "duplicate"
       });
       return;
     }
 
-    const metadata = await this.resolveMetadata(resolvedUrl, input.title);
+    const metadata = fallbackMetadata(normalizedUrl, input.title || "");
     const targetFolder = this.getDefaultTargetFolder();
     const clip = {
-      url: resolvedUrl,
+      url: normalizedUrl,
       title: metadata.title,
       note: cleanMemo(input.note),
       targetFolder,
@@ -282,25 +284,12 @@ export default class IshibashiWebClipper extends Plugin {
       metadata
     };
 
-    const confirmedClip = this.settings.confirmBeforeSave
+    const confirmedClip = this.settings.confirmBeforeSave || input.requireConfirmation
       ? await this.confirmClip(clip)
       : clip;
     if (!confirmedClip) return;
 
     await this.createClipNote(confirmedClip);
-  }
-
-  async resolveSharedRedirect(url: string): Promise<string> {
-    if (!shouldResolveSharedRedirect(url)) return url;
-    try {
-      const resolved = await resolveFetchFinalUrl(url, 8000);
-      return resolved && normalizeCacheKey(resolved) !== normalizeCacheKey(url)
-        ? resolved
-        : url;
-    } catch (error) {
-      console.warn("Failed to resolve shared redirect URL", error);
-      return url;
-    }
   }
 
   getDefaultTargetFolder(): string {
@@ -392,51 +381,6 @@ export default class IshibashiWebClipper extends Plugin {
     }
   }
 
-  async resolveMetadata(url: string, sharedTitle: string): Promise<WebClipMetadata> {
-    const fallback = fallbackMetadata(url, sharedTitle);
-    if (!this.settings.fetchMetadata && !this.settings.fetchPageTitle) {
-      return fallback;
-    }
-
-    try {
-      const response = await withTimeout(requestUrl({
-        url,
-        method: "GET",
-        headers: {
-          "User-Agent": "Mozilla/5.0 Obsidian Ishibashi Web Clipper"
-        }
-      }), 10000);
-      const html = response.text || "";
-      const tags = parseOpenGraph(html);
-      const title = cleanTitle(
-        cleanTitle(sharedTitle) ||
-        tags["og:title"] ||
-        tags["twitter:title"] ||
-        parseHtmlTitle(html) ||
-        fallback.title
-      );
-      const description = cleanText(
-        tags["og:description"] ||
-        tags["twitter:description"] ||
-        tags.description ||
-        ""
-      );
-      const image = absoluteUrl(tags["og:image"] || tags["twitter:image"] || "", url);
-      const site = cleanText(tags["og:site_name"] || fallback.site);
-
-      return cleanMetadata({
-        url,
-        title,
-        site,
-        description,
-        image
-      });
-    } catch (error) {
-      console.warn("Failed to fetch web clip metadata", error);
-      return fallback;
-    }
-  }
-
   async confirmClip(clip: ClipDraft): Promise<ClipDraft | null> {
     return new Promise((resolve) => {
       const modal = new ClipConfirmModal(this.app, this, clip, resolve);
@@ -492,7 +436,9 @@ export default class IshibashiWebClipper extends Plugin {
       `created: ${JSON.stringify(date)}`,
       `created_at: ${JSON.stringify(createdAt)}`,
       `domain: ${JSON.stringify(metadata.domain || domainFromUrl(clip.url))}`,
-      `site: ${JSON.stringify(metadata.site || "")}`
+      `site: ${JSON.stringify(metadata.site || "")}`,
+      "content_source: user-provided",
+      "network_access: false"
     ];
 
     if (metadata.description) {
@@ -2488,18 +2434,6 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
       });
 
     new Setting(behaviorSection)
-      .setName(this.plugin.t("settingFetchMetadata"))
-      .setDesc(this.plugin.t("settingFetchMetadataDesc"))
-      .addToggle((toggle) => {
-        toggle.setValue(!!this.draftSettings.fetchMetadata).onChange((value) => {
-          this.draftSettings.fetchMetadata = value;
-          this.draftSettings.fetchPageTitle = value;
-          this.markDirty();
-          this.refreshSummary();
-        });
-      });
-
-    new Setting(behaviorSection)
       .setName(this.plugin.t("settingPreventDuplicates"))
       .addToggle((toggle) => {
         toggle.setValue(!!this.draftSettings.preventDuplicateUrls).onChange((value) => {
@@ -2823,10 +2757,7 @@ class IshibashiWebClipperSettingTab extends PluginSettingTab {
     const duplicate = this.draftSettings.preventDuplicateUrls
       ? this.plugin.t("summaryDuplicateOn")
       : this.plugin.t("summaryDuplicateOff");
-    const metadata = this.draftSettings.fetchMetadata
-      ? this.plugin.t("summaryMetadataOn")
-      : this.plugin.t("summaryMetadataOff");
-    return `${duplicate} / ${metadata}`;
+    return `${duplicate} / ${this.plugin.t("summaryMetadataOff")}`;
   }
 
   getDefaultDraftMigrationFolder(): string {

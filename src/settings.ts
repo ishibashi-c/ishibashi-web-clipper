@@ -33,7 +33,9 @@ export function mergeSettings(saved: unknown): WebClipperSettings {
     settings.migrationTargetFolder = languagePreset.root || DEFAULT_SETTINGS.migrationTargetFolder;
   }
   settings.browserVaultName = String(settings.browserVaultName || "");
-  settings.fetchMetadata = settings.fetchMetadata ?? settings.fetchPageTitle ?? DEFAULT_SETTINGS.fetchMetadata;
+  settings.fetchMetadata = false;
+  settings.fetchPageTitle = false;
+  settings.retirementNoticeShownVersion = String(settings.retirementNoticeShownVersion || "");
   settings.fixedTags = Array.isArray(settings.fixedTags) ? settings.fixedTags : DEFAULT_FIXED_TAGS[settings.language];
   if (settings.fixedTags.length === 1 && settings.fixedTags[0] === "webclip" && settings.language === "ja") {
     settings.fixedTags = DEFAULT_FIXED_TAGS.ja;

@@ -1,4 +1,4 @@
-import { App, FrontMatterCache, TFile, parseYaml, requestUrl } from "obsidian";
+import { App, FrontMatterCache, TFile, parseYaml } from "obsidian";
 import { DEFAULT_SETTINGS } from "./constants";
 import { WebClipLibraryItem, WebClipMetadata } from "./types";
 
@@ -153,39 +153,6 @@ export function cleanMetadata(metadata: Partial<WebClipMetadata>): WebClipMetada
     image: metadata.image || "",
     domain: domainFromUrl(url)
   };
-}
-
-export function parseOpenGraph(html: string): Record<string, string> {
-  const tags: Record<string, string> = {};
-  const metaRe = /<meta\s+[^>]*>/gi;
-  let match;
-  while ((match = metaRe.exec(String(html || ""))) !== null) {
-    const tag = match[0];
-    const key = getHtmlAttribute(tag, "property") || getHtmlAttribute(tag, "name");
-    const content = getHtmlAttribute(tag, "content");
-    if (key && content) tags[key.toLowerCase()] = decodeHtmlEntities(content);
-  }
-  return tags;
-}
-
-export function getHtmlAttribute(tag: string, name: string): string {
-  const re = new RegExp(`${name}\\s*=\\s*("([^"]*)"|'([^']*)'|([^\\s>]+))`, "i");
-  const match = tag.match(re);
-  return match ? (match[2] || match[3] || match[4] || "") : "";
-}
-
-export function parseHtmlTitle(html: string): string {
-  const match = String(html || "").match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-  return match ? decodeHtmlEntities(match[1]) : "";
-}
-
-export function absoluteUrl(value: string, baseUrl: string): string {
-  if (!value) return "";
-  try {
-    return new URL(value, baseUrl).toString();
-  } catch {
-    return value;
-  }
 }
 
 export function titleFromUrl(url: string): string {
@@ -357,21 +324,6 @@ export function nowIsoString() {
   return new Date().toISOString();
 }
 
-export function shouldResolveSharedRedirect(url: string): boolean {
-  try {
-    const host = new URL(url).hostname.toLowerCase().replace(/^www\./, "");
-    return host === "share.google" || host.endsWith(".share.google");
-  } catch {
-    return false;
-  }
-}
-
-export async function resolveFetchFinalUrl(url: string, timeoutMs: number): Promise<string> {
-  const response = await withTimeout(requestUrl({ url, method: "GET", throw: false }), timeoutMs);
-  const location = response.headers.location || response.headers.Location || "";
-  return location ? normalizeUrl(absoluteUrl(location, url)) : "";
-}
-
 export function inferCreatedAt(createdAt: string, created: string, file: TFile): string {
   const existing = Date.parse(createdAt || "");
   if (Number.isFinite(existing)) return new Date(existing).toISOString();
@@ -380,18 +332,6 @@ export function inferCreatedAt(createdAt: string, created: string, file: TFile):
   if (Number.isFinite(legacy)) return new Date(legacy).toISOString();
 
   return new Date(file.stat.ctime).toISOString();
-}
-
-export function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const timer = window.setTimeout(() => {
-      reject(new Error(`Request timed out after ${timeoutMs}ms`));
-    }, timeoutMs);
-    promise
-      .then((value) => resolve(value))
-      .catch((error: unknown) => reject(error instanceof Error ? error : new Error(String(error))))
-      .finally(() => window.clearTimeout(timer));
-  });
 }
 
 export function stripTrailingSlash(value: unknown): string {
