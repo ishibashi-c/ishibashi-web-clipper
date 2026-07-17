@@ -43,16 +43,13 @@ var DEFAULT_SETTINGS = {
     "",
     "{{url}}",
     "",
-    "## Summary",
-    "",
-    "{{description}}",
-    "",
     "## Memo",
     "",
     "{{note}}"
   ].join("\n"),
-  fetchMetadata: true,
-  fetchPageTitle: true,
+  fetchMetadata: false,
+  fetchPageTitle: false,
+  retirementNoticeShownVersion: "",
   confirmBeforeSave: false,
   openAfterClip: false,
   fixedTags: ["web\u30AF\u30EA\u30C3\u30D7"],
@@ -99,6 +96,7 @@ var STRINGS = {
     noticeInvalidUrl: "\u4FDD\u5B58\u3059\u308BURL\u304C\u6B63\u3057\u304F\u3042\u308A\u307E\u305B\u3093\u3002",
     noticeDuplicate: "\u540C\u3058URL\u306E\u30A6\u30A7\u30D6\u30AF\u30EA\u30C3\u30D7\u304C\u65E2\u306B\u3042\u308A\u307E\u3059\u3002",
     noticeCreated: "\u30A6\u30A7\u30D6\u30AF\u30EA\u30C3\u30D7\u3092\u4F5C\u6210\u3057\u307E\u3057\u305F",
+    noticeRetired: "Ishibashi Web Clipper\u65E7\u7248\u306E\u958B\u767A\u306F\u7D42\u4E86\u3057\u307E\u3057\u305F\u3002\u3053\u306E\u5B89\u5168\u5316\u7248\u306F\u30DA\u30FC\u30B8\u901A\u4FE1\u3092\u884C\u3044\u307E\u305B\u3093\u3002\u4ECA\u5F8C\u306FCommunity Plugins\u306E\u300CIshibashi Web Clipper V2\u300D\u3078\u79FB\u884C\u3057\u3066\u304F\u3060\u3055\u3044\u3002",
     noticeTargetFolder: "\u4FDD\u5B58\u5148",
     noticeFolderPresetApplied: "\u30D5\u30A9\u30EB\u30C0\u30D7\u30EA\u30BB\u30C3\u30C8\u3092\u4F5C\u6210\u3057\u307E\u3057\u305F\u3002",
     noticeFolderPresetFailed: "\u521D\u671F\u8A2D\u5B9A\u306F\u5B8C\u4E86\u3057\u307E\u3057\u305F\u304C\u3001\u30D5\u30A9\u30EB\u30C0\u30D7\u30EA\u30BB\u30C3\u30C8\u3092\u4F5C\u6210\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002\u8A2D\u5B9A\u753B\u9762\u304B\u3089\u518D\u5B9F\u884C\u3057\u3066\u304F\u3060\u3055\u3044\u3002",
@@ -122,8 +120,8 @@ var STRINGS = {
     summaryNoTags: "\u30BF\u30B0\u306A\u3057",
     summaryDuplicateOn: "\u91CD\u8907URL\u3092\u9632\u6B62",
     summaryDuplicateOff: "\u91CD\u8907URL\u3092\u8A31\u53EF",
-    summaryMetadataOn: "\u30E1\u30BF\u30C7\u30FC\u30BF\u53D6\u5F97\u3042\u308A",
-    summaryMetadataOff: "\u30E1\u30BF\u30C7\u30FC\u30BF\u53D6\u5F97\u306A\u3057",
+    summaryMetadataOn: "\u30E1\u30BF\u30C7\u30FC\u30BF\u53D6\u5F97\u306F\u5EC3\u6B62\u6E08\u307F",
+    summaryMetadataOff: "\u30DA\u30FC\u30B8\u901A\u4FE1\u306A\u3057",
     sectionStart: "\u6700\u521D\u306B\u6C7A\u3081\u308B\u3053\u3068",
     sectionStartDesc: "\u8868\u793A\u8A00\u8A9E\u3092\u9078\u3073\u307E\u3059\u3002\u4FDD\u5B58\u306E\u6D41\u308C\u306F\u3001\u672A\u6574\u7406\u30D5\u30A9\u30EB\u30C0\u306B\u96C6\u3081\u3066\u5F8C\u304B\u3089\u6574\u7406\u3059\u308B\u5F62\u3067\u3059\u3002",
     sectionDestination: "\u4FDD\u5B58\u5148",
@@ -131,7 +129,7 @@ var STRINGS = {
     sectionTags: "\u30BF\u30B0",
     sectionTagsDesc: "\u56FA\u5B9A\u30BF\u30B0\u3001\u4FDD\u5B58\u5143\u30C9\u30E1\u30A4\u30F3\u3001\u4FDD\u5B58\u5148\u30D5\u30A9\u30EB\u30C0\u7531\u6765\u306E\u30BF\u30B0\u3092\u7BA1\u7406\u3057\u307E\u3059\u3002",
     sectionBehavior: "\u4FDD\u5B58\u6642\u306E\u52D5\u304D",
-    sectionBehaviorDesc: "\u78BA\u8A8D\u753B\u9762\u3001\u91CD\u8907\u9632\u6B62\u3001\u30D5\u30A1\u30A4\u30EB\u540D\u3001\u65E5\u4ED8\u5F62\u5F0F\u306A\u3069\u306E\u4FDD\u5B58\u30EB\u30FC\u30EB\u3067\u3059\u3002",
+    sectionBehaviorDesc: "\u78BA\u8A8D\u753B\u9762\u3001\u91CD\u8907\u9632\u6B62\u3001\u30D5\u30A1\u30A4\u30EB\u540D\u3001\u65E5\u4ED8\u5F62\u5F0F\u306A\u3069\u306E\u4FDD\u5B58\u30EB\u30FC\u30EB\u3067\u3059\u3002\u4FDD\u5B58\u5148\u30DA\u30FC\u30B8\u3078\u306E\u901A\u4FE1\u306F\u884C\u3044\u307E\u305B\u3093\u3002",
     sectionTemplate: "\u30CE\u30FC\u30C8\u672C\u6587",
     sectionTemplateDesc: "\u4F5C\u6210\u3055\u308C\u308BMarkdown\u30CE\u30FC\u30C8\u306E\u672C\u6587\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3067\u3059\u3002",
     sectionBrowser: "\u30D6\u30E9\u30A6\u30B6\u304B\u3089\u4FDD\u5B58",
@@ -164,8 +162,6 @@ var STRINGS = {
     settingConfirm: "\u4FDD\u5B58\u524D\u306B\u78BA\u8A8D\u3059\u308B",
     settingConfirmDesc: "\u30BF\u30A4\u30C8\u30EB\u3001\u4FDD\u5B58\u5148\u3001\u30BF\u30B0\u3001\u30E1\u30E2\u3092\u4FDD\u5B58\u524D\u306B\u7DE8\u96C6\u3057\u307E\u3059\u3002",
     settingOpenAfterClip: "\u4FDD\u5B58\u5F8C\u306B\u30CE\u30FC\u30C8\u3092\u958B\u304F",
-    settingFetchMetadata: "\u30E1\u30BF\u30C7\u30FC\u30BF\u3092\u53D6\u5F97\u3059\u308B",
-    settingFetchMetadataDesc: "\u672C\u6587\u62BD\u51FA\u306F\u884C\u308F\u305A\u3001\u516C\u958B\u30E1\u30BF\u30C7\u30FC\u30BF\u3060\u3051\u3092\u53D6\u5F97\u3057\u307E\u3059\u3002",
     settingPreventDuplicates: "\u540C\u3058URL\u306E\u91CD\u8907\u4FDD\u5B58\u3092\u9632\u3050",
     settingMaxFileName: "\u30D5\u30A1\u30A4\u30EB\u540D\u306E\u6700\u5927\u6587\u5B57\u6570",
     settingMaxFileNameDesc: "Sync\u3067\u6271\u3044\u3084\u3059\u3044\u77ED\u3081\u306E\u30D5\u30A1\u30A4\u30EB\u540D\u306B\u3057\u307E\u3059\u3002\u65E5\u4ED8\u306Ffrontmatter\u306B\u4FDD\u5B58\u3057\u307E\u3059\u3002",
@@ -185,7 +181,7 @@ var STRINGS = {
     settingMigrationRunDesc: "\u5B9F\u884C\u524D\u306B\u5909\u66F4\u5BFE\u8C61\u3068\u5909\u66F4\u5185\u5BB9\u3092\u30D7\u30EC\u30D3\u30E5\u30FC\u3057\u307E\u3059\u3002\u672C\u6587\u3001\u30D5\u30A1\u30A4\u30EB\u540D\u3001\u4FDD\u5B58\u5834\u6240\u306F\u5909\u66F4\u3057\u307E\u305B\u3093\u3002",
     settingMigrationRunButton: "\u30D7\u30EC\u30D3\u30E5\u30FC\u3092\u958B\u304F",
     templateHeading: "\u30CE\u30FC\u30C8\u672C\u6587\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8",
-    templateHelp: "{{date}}, {{title}}, {{url}}, {{note}}, {{description}}, {{image}}, {{site}}, {{domain}}, {{tags}} \u304C\u4F7F\u3048\u307E\u3059\u3002",
+    templateHelp: "{{date}}, {{title}}, {{url}}, {{note}}, {{site}}, {{domain}}, {{tags}} \u304C\u4F7F\u3048\u307E\u3059\u3002\u65E7\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u306E {{description}} \u3068 {{image}} \u306F\u7A7A\u306B\u306A\u308A\u307E\u3059\u3002",
     uriHeading: "\u5171\u6709\u7528URL",
     confirmTitle: "\u30A6\u30A7\u30D6\u30AF\u30EA\u30C3\u30D7\u3092\u4FDD\u5B58",
     fieldTitle: "\u30BF\u30A4\u30C8\u30EB",
@@ -294,6 +290,7 @@ var STRINGS = {
     noticeInvalidUrl: "The URL is not valid.",
     noticeDuplicate: "A web clip with the same URL already exists.",
     noticeCreated: "Created web clip",
+    noticeRetired: "The original Ishibashi Web Clipper is retired. This safety release makes no source-page requests. Please migrate to Ishibashi Web Clipper V2 from Community Plugins.",
     noticeTargetFolder: "Destination",
     noticeFolderPresetApplied: "Created the folder preset.",
     noticeFolderPresetFailed: "Setup was completed, but the folder preset could not be created. Run it again from settings.",
@@ -317,8 +314,8 @@ var STRINGS = {
     summaryNoTags: "No tags",
     summaryDuplicateOn: "Duplicate URLs blocked",
     summaryDuplicateOff: "Duplicate URLs allowed",
-    summaryMetadataOn: "Metadata fetch on",
-    summaryMetadataOff: "Metadata fetch off",
+    summaryMetadataOn: "Metadata fetching retired",
+    summaryMetadataOff: "No source-page requests",
     sectionStart: "Start here",
     sectionStartDesc: "Choose the display language. Clips are collected in an inbox folder first and organized later.",
     sectionDestination: "Destination",
@@ -326,7 +323,7 @@ var STRINGS = {
     sectionTags: "Tags",
     sectionTagsDesc: "Manage fixed tags, source-domain tags, and folder-derived tags.",
     sectionBehavior: "Save behavior",
-    sectionBehaviorDesc: "Control confirmation, duplicate prevention, filenames, and date format.",
+    sectionBehaviorDesc: "Control confirmation, duplicate prevention, filenames, and date format. The plugin makes no source-page requests.",
     sectionTemplate: "Note body",
     sectionTemplateDesc: "Markdown template used when creating a web clip note.",
     sectionBrowser: "Browser capture",
@@ -359,8 +356,6 @@ var STRINGS = {
     settingConfirm: "Confirm before saving",
     settingConfirmDesc: "Edit title, folder, tags, and memo before creating a note.",
     settingOpenAfterClip: "Open note after saving",
-    settingFetchMetadata: "Fetch metadata",
-    settingFetchMetadataDesc: "Fetch public metadata only. Article body extraction is not performed.",
     settingPreventDuplicates: "Prevent duplicate URLs",
     settingMaxFileName: "Max filename length",
     settingMaxFileNameDesc: "Use shorter sync-friendly filenames. Dates are stored in frontmatter.",
@@ -380,7 +375,7 @@ var STRINGS = {
     settingMigrationRunDesc: "Preview changed files and changes before applying. Body text, filenames, and folders are not changed.",
     settingMigrationRunButton: "Open preview",
     templateHeading: "Note body template",
-    templateHelp: "Available variables: {{date}}, {{title}}, {{url}}, {{note}}, {{description}}, {{image}}, {{site}}, {{domain}}, {{tags}}.",
+    templateHelp: "Available variables: {{date}}, {{title}}, {{url}}, {{note}}, {{site}}, {{domain}}, and {{tags}}. Legacy {{description}} and {{image}} variables remain empty.",
     uriHeading: "Share URL",
     confirmTitle: "Save Web Clip",
     fieldTitle: "Title",
@@ -602,35 +597,6 @@ function cleanMetadata(metadata) {
     domain: domainFromUrl(url)
   };
 }
-function parseOpenGraph(html) {
-  const tags = {};
-  const metaRe = /<meta\s+[^>]*>/gi;
-  let match;
-  while ((match = metaRe.exec(String(html || ""))) !== null) {
-    const tag = match[0];
-    const key = getHtmlAttribute(tag, "property") || getHtmlAttribute(tag, "name");
-    const content = getHtmlAttribute(tag, "content");
-    if (key && content) tags[key.toLowerCase()] = decodeHtmlEntities(content);
-  }
-  return tags;
-}
-function getHtmlAttribute(tag, name) {
-  const re = new RegExp(`${name}\\s*=\\s*("([^"]*)"|'([^']*)'|([^\\s>]+))`, "i");
-  const match = tag.match(re);
-  return match ? match[2] || match[3] || match[4] || "" : "";
-}
-function parseHtmlTitle(html) {
-  const match = String(html || "").match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-  return match ? decodeHtmlEntities(match[1]) : "";
-}
-function absoluteUrl(value, baseUrl) {
-  if (!value) return "";
-  try {
-    return new URL(value, baseUrl).toString();
-  } catch {
-    return value;
-  }
-}
 function titleFromUrl(url) {
   try {
     const parsed = new URL(url);
@@ -737,33 +703,12 @@ function shortHash(value) {
 function nowIsoString() {
   return (/* @__PURE__ */ new Date()).toISOString();
 }
-function shouldResolveSharedRedirect(url) {
-  try {
-    const host = new URL(url).hostname.toLowerCase().replace(/^www\./, "");
-    return host === "share.google" || host.endsWith(".share.google");
-  } catch {
-    return false;
-  }
-}
-async function resolveFetchFinalUrl(url, timeoutMs) {
-  const response = await withTimeout((0, import_obsidian.requestUrl)({ url, method: "GET", throw: false }), timeoutMs);
-  const location = response.headers.location || response.headers.Location || "";
-  return location ? normalizeUrl(absoluteUrl(location, url)) : "";
-}
 function inferCreatedAt(createdAt, created, file) {
   const existing = Date.parse(createdAt || "");
   if (Number.isFinite(existing)) return new Date(existing).toISOString();
   const legacy = Date.parse(created || "");
   if (Number.isFinite(legacy)) return new Date(legacy).toISOString();
   return new Date(file.stat.ctime).toISOString();
-}
-function withTimeout(promise, timeoutMs) {
-  return new Promise((resolve, reject) => {
-    const timer = window.setTimeout(() => {
-      reject(new Error(`Request timed out after ${timeoutMs}ms`));
-    }, timeoutMs);
-    promise.then((value) => resolve(value)).catch((error) => reject(error instanceof Error ? error : new Error(String(error)))).finally(() => window.clearTimeout(timer));
-  });
 }
 function stripTrailingSlash(value) {
   return String(value || "").replace(/\/$/, "");
@@ -791,7 +736,9 @@ function mergeSettings(saved) {
     settings.migrationTargetFolder = languagePreset.root || DEFAULT_SETTINGS.migrationTargetFolder;
   }
   settings.browserVaultName = String(settings.browserVaultName || "");
-  settings.fetchMetadata = settings.fetchMetadata ?? settings.fetchPageTitle ?? DEFAULT_SETTINGS.fetchMetadata;
+  settings.fetchMetadata = false;
+  settings.fetchPageTitle = false;
+  settings.retirementNoticeShownVersion = String(settings.retirementNoticeShownVersion || "");
   settings.fixedTags = Array.isArray(settings.fixedTags) ? settings.fixedTags : DEFAULT_FIXED_TAGS[settings.language];
   if (settings.fixedTags.length === 1 && settings.fixedTags[0] === "webclip" && settings.language === "ja") {
     settings.fixedTags = DEFAULT_FIXED_TAGS.ja;
@@ -816,8 +763,19 @@ var IshibashiWebClipper = class extends import_obsidian2.Plugin {
   }
   async onload() {
     this.settings = mergeSettings(await this.loadData());
+    let settingsChanged = false;
     if (!this.settings.browserVaultName) {
       this.settings.browserVaultName = this.getVaultName();
+      settingsChanged = true;
+    }
+    if (this.settings.retirementNoticeShownVersion !== "1.0.10") {
+      this.settings.retirementNoticeShownVersion = "1.0.10";
+      settingsChanged = true;
+      this.app.workspace.onLayoutReady(() => {
+        new import_obsidian2.Notice(this.t("noticeRetired"), 2e4);
+      });
+    }
+    if (settingsChanged) {
       await this.saveSettings();
     }
     this.registerObsidianProtocolHandler(PROTOCOL_ACTION, async (params) => {
@@ -931,7 +889,7 @@ var IshibashiWebClipper = class extends import_obsidian2.Plugin {
       new import_obsidian2.Notice(errorMessage);
       return;
     }
-    await this.prepareClip(parsed);
+    await this.prepareClip({ url: parsed.url, title: "", note: "", requireConfirmation: true });
   }
   async prepareClip(input) {
     const normalizedUrl = normalizeUrl(input.url);
@@ -939,42 +897,31 @@ var IshibashiWebClipper = class extends import_obsidian2.Plugin {
       new import_obsidian2.Notice(this.t("noticeInvalidUrl"));
       return;
     }
-    const resolvedUrl = await this.resolveSharedRedirect(normalizedUrl);
-    const duplicate = this.settings.preventDuplicateUrls ? await this.findExistingClip(resolvedUrl) : null;
+    const duplicate = this.settings.preventDuplicateUrls ? await this.findExistingClip(normalizedUrl) : null;
     if (duplicate) {
       new import_obsidian2.Notice(this.t("noticeDuplicate"));
       await this.openFile(duplicate.path);
       await this.recordHistory({
-        url: resolvedUrl,
-        title: duplicate.basename || titleFromUrl(resolvedUrl),
+        url: normalizedUrl,
+        title: duplicate.basename || titleFromUrl(normalizedUrl),
         path: duplicate.path,
         status: "duplicate"
       });
       return;
     }
-    const metadata = await this.resolveMetadata(resolvedUrl, input.title);
+    const metadata = fallbackMetadata(normalizedUrl, input.title || "");
     const targetFolder = this.getDefaultTargetFolder();
     const clip = {
-      url: resolvedUrl,
+      url: normalizedUrl,
       title: metadata.title,
       note: cleanMemo(input.note),
       targetFolder,
       tags: this.getClipTags(targetFolder, metadata.domain),
       metadata
     };
-    const confirmedClip = this.settings.confirmBeforeSave ? await this.confirmClip(clip) : clip;
+    const confirmedClip = this.settings.confirmBeforeSave || input.requireConfirmation ? await this.confirmClip(clip) : clip;
     if (!confirmedClip) return;
     await this.createClipNote(confirmedClip);
-  }
-  async resolveSharedRedirect(url) {
-    if (!shouldResolveSharedRedirect(url)) return url;
-    try {
-      const resolved = await resolveFetchFinalUrl(url, 8e3);
-      return resolved && normalizeCacheKey(resolved) !== normalizeCacheKey(url) ? resolved : url;
-    } catch (error) {
-      console.warn("Failed to resolve shared redirect URL", error);
-      return url;
-    }
   }
   getDefaultTargetFolder() {
     return normalizePath(this.settings.inboxFolder || DEFAULT_SETTINGS.inboxFolder);
@@ -1051,41 +998,6 @@ var IshibashiWebClipper = class extends import_obsidian2.Plugin {
       await this.saveSettings();
     }
   }
-  async resolveMetadata(url, sharedTitle) {
-    const fallback = fallbackMetadata(url, sharedTitle);
-    if (!this.settings.fetchMetadata && !this.settings.fetchPageTitle) {
-      return fallback;
-    }
-    try {
-      const response = await withTimeout((0, import_obsidian2.requestUrl)({
-        url,
-        method: "GET",
-        headers: {
-          "User-Agent": "Mozilla/5.0 Obsidian Ishibashi Web Clipper"
-        }
-      }), 1e4);
-      const html = response.text || "";
-      const tags = parseOpenGraph(html);
-      const title = cleanTitle(
-        cleanTitle(sharedTitle) || tags["og:title"] || tags["twitter:title"] || parseHtmlTitle(html) || fallback.title
-      );
-      const description = cleanText(
-        tags["og:description"] || tags["twitter:description"] || tags.description || ""
-      );
-      const image = absoluteUrl(tags["og:image"] || tags["twitter:image"] || "", url);
-      const site = cleanText(tags["og:site_name"] || fallback.site);
-      return cleanMetadata({
-        url,
-        title,
-        site,
-        description,
-        image
-      });
-    } catch (error) {
-      console.warn("Failed to fetch web clip metadata", error);
-      return fallback;
-    }
-  }
   async confirmClip(clip) {
     return new Promise((resolve) => {
       const modal = new ClipConfirmModal(this.app, this, clip, resolve);
@@ -1126,7 +1038,9 @@ var IshibashiWebClipper = class extends import_obsidian2.Plugin {
       `created: ${JSON.stringify(date)}`,
       `created_at: ${JSON.stringify(createdAt)}`,
       `domain: ${JSON.stringify(metadata.domain || domainFromUrl(clip.url))}`,
-      `site: ${JSON.stringify(metadata.site || "")}`
+      `site: ${JSON.stringify(metadata.site || "")}`,
+      "content_source: user-provided",
+      "network_access: false"
     ];
     if (metadata.description) {
       frontmatter.push(`description: ${JSON.stringify(metadata.description)}`);
@@ -2716,14 +2630,6 @@ var IshibashiWebClipperSettingTab = class extends import_obsidian2.PluginSetting
         this.markDirty();
       });
     });
-    new import_obsidian2.Setting(behaviorSection).setName(this.plugin.t("settingFetchMetadata")).setDesc(this.plugin.t("settingFetchMetadataDesc")).addToggle((toggle) => {
-      toggle.setValue(!!this.draftSettings.fetchMetadata).onChange((value) => {
-        this.draftSettings.fetchMetadata = value;
-        this.draftSettings.fetchPageTitle = value;
-        this.markDirty();
-        this.refreshSummary();
-      });
-    });
     new import_obsidian2.Setting(behaviorSection).setName(this.plugin.t("settingPreventDuplicates")).addToggle((toggle) => {
       toggle.setValue(!!this.draftSettings.preventDuplicateUrls).onChange((value) => {
         this.draftSettings.preventDuplicateUrls = value;
@@ -2978,8 +2884,7 @@ var IshibashiWebClipperSettingTab = class extends import_obsidian2.PluginSetting
   }
   getProtectionSummary() {
     const duplicate = this.draftSettings.preventDuplicateUrls ? this.plugin.t("summaryDuplicateOn") : this.plugin.t("summaryDuplicateOff");
-    const metadata = this.draftSettings.fetchMetadata ? this.plugin.t("summaryMetadataOn") : this.plugin.t("summaryMetadataOff");
-    return `${duplicate} / ${metadata}`;
+    return `${duplicate} / ${this.plugin.t("summaryMetadataOff")}`;
   }
   getDefaultDraftMigrationFolder() {
     const preset = this.plugin.getFolderPreset(this.draftSettings.language);

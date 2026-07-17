@@ -1,7 +1,7 @@
 {
   "name": "ishibashi-web-clipper",
-  "version": "1.0.9",
-  "description": "Obsidian plugin for capturing shared web links as Markdown notes.",
+  "version": "1.0.10",
+  "description": "Final safety release of the retired Ishibashi Web Clipper.",
   "main": "main.js",
   "scripts": {
     "build": "node esbuild.config.mjs --production",

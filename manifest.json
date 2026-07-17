@@ -1,9 +1,9 @@
 {
   "id": "ishibashi-web-clipper",
   "name": "Ishibashi Web Clipper",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "minAppVersion": "1.12.0",
-  "description": "Captures shared web links as Markdown notes with public metadata, duplicate checks, tags, and clip history.",
+  "description": "Retired link saver. Final safety release makes no source-page requests; migrate to Ishibashi Web Clipper V2.",
   "author": "IshibashiCustomize",
   "isDesktopOnly": false
 }
